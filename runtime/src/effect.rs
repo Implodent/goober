@@ -1,5 +1,4 @@
 use crate::{node::NodeId, with_runtime, Disposer, Runtime, SignalDispose};
-use cfg_if::cfg_if;
 use std::{any::Any, cell::RefCell, marker::PhantomData, rc::Rc};
 
 /// Effects run a certain chunk of code whenever the signals they depend on change.
@@ -68,28 +67,23 @@ pub fn create_effect<T>(f: impl Fn(Option<T>) -> T + 'static) -> Effect<T>
 where
     T: 'static,
 {
-    cfg_if! {
-        if #[cfg(not(feature = "ssr"))] {
-            use crate::{Owner, queue_microtask, with_owner};
+    use crate::{queue_microtask, with_owner, Owner};
 
-            let runtime = Runtime::current();
-            let owner = Owner::current();
-            let id = runtime.create_effect(f);
+    let runtime = Runtime::current();
+    let owner = Owner::current();
+    let id = runtime.create_effect(f);
 
-            queue_microtask(move || {
-                with_owner(owner.unwrap(), move || {
-                    _ = with_runtime( |runtime| {
-                        runtime.update_if_necessary(id);
-                    });
-                });
+    queue_microtask(move || {
+        with_owner(owner.unwrap(), move || {
+            _ = with_runtime(|runtime| {
+                runtime.update_if_necessary(id);
             });
+        });
+    });
 
-            Effect { id, ty: PhantomData }
-        } else {
-            // clear warnings
-            _ = f;
-            Effect { id: Default::default(), ty: PhantomData }
-        }
+    Effect {
+        id,
+        ty: PhantomData,
     }
 }
 
@@ -188,10 +182,7 @@ where
     /// This method allows access to the effect’s value outside the effect function.
     /// The next time a signal change causes the effect to run, it will receive the
     /// mutated value.
-    pub fn with_value_mut<U>(
-        &self,
-        f: impl FnOnce(&mut Option<T>) -> U,
-    ) -> Option<U> {
+    pub fn with_value_mut<U>(&self, f: impl FnOnce(&mut Option<T>) -> U) -> Option<U> {
         with_runtime(|runtime| {
             let nodes = runtime.nodes.borrow();
             let node = nodes.get(self.id)?;
@@ -243,9 +234,7 @@ where
 )]
 #[track_caller]
 #[inline(always)]
-pub fn create_isomorphic_effect<T>(
-    f: impl Fn(Option<T>) -> T + 'static,
-) -> Effect<T>
+pub fn create_isomorphic_effect<T>(f: impl Fn(Option<T>) -> T + 'static) -> Effect<T>
 where
     T: 'static,
 {
@@ -276,25 +265,18 @@ where
     )
 )]
 #[inline(always)]
-pub fn create_render_effect<T>(
-    f: impl Fn(Option<T>) -> T + 'static,
-) -> Effect<T>
+pub fn create_render_effect<T>(f: impl Fn(Option<T>) -> T + 'static) -> Effect<T>
 where
     T: 'static,
 {
-    cfg_if! {
-        if #[cfg(not(feature = "ssr"))] {
-            let runtime = Runtime::current();
-            let id = runtime.create_effect(f);
-            _ = with_runtime( |runtime| {
-                runtime.update_if_necessary(id);
-            });
-            Effect { id, ty: PhantomData }
-        } else {
-            // clear warnings
-            _ = f;
-            Effect { id: Default::default(), ty: PhantomData }
-        }
+    let runtime = Runtime::current();
+    let id = runtime.create_effect(f);
+    _ = with_runtime(|runtime| {
+        runtime.update_if_necessary(id);
+    });
+    Effect {
+        id,
+        ty: PhantomData,
     }
 }
 

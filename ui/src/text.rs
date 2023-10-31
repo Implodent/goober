@@ -32,14 +32,14 @@ impl Text {
 }
 
 impl View for Text {
-    fn precalc_size(&self) -> unit::ISize {
+    fn size(&self) -> unit::ISize {
         self.font
             .measure_str(&self.text, Some(&self.paint))
             .1
             .round()
             .size()
     }
-    fn render(&self, renderer: &impl Renderer, context: &RenderContext) {
+    fn render(&self, renderer: &mut dyn Renderer, context: &RenderContext) {
         renderer.draw_text(&self.text, context.position, &self.font, &self.paint);
     }
 }
