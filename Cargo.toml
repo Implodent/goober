@@ -1,0 +1,8 @@
+[workspace]
+members = ["runtime", "ui", "runner"]
+resolver = "2"
+
+[workspace.dependencies]
+
+[workspace.package]
+version = "0.1.0"

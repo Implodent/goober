@@ -1,0 +1,27 @@
+[package]
+name = "goober-runtime"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+slotmap = { version = "1", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+futures = { version = "0.3" }
+rustc-hash = "1"
+serde-wasm-bindgen = "0.5"
+serde_json = "1"
+base64 = "0.21"
+thiserror = "1"
+cfg-if = "1"
+indexmap = "2"
+self_cell = "1.0.0"
+pin-project = "1"
+paste = "1"
+tracing = "0"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = { version = "0.4" }
+
+[features]
+default = []
+nightly = []

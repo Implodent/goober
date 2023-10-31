@@ -1,0 +1,7 @@
+[package]
+name = "goober-runner"
+version.workspace = true
+edition = "2021"
+
+[dependencies]
+goober-ui = { path = "../ui", features = [ "skia", "skia-gpu", "skia-gl" ] }
