@@ -1,6 +1,9 @@
 use std::any::Any;
 
-use crate::{render::Paint, View};
+use crate::View;
+
+mod builtin;
+pub use builtin::*;
 
 pub trait Modifier: Any {
     fn render(
@@ -12,7 +15,9 @@ pub trait Modifier: Any {
         view.render(renderer, context);
     }
 
-    fn size(&self, view: &dyn View) -> crate::unit::ISize;
+    fn size(&self, view: &dyn View) -> crate::unit::ISize {
+        view.size()
+    }
 }
 
 pub struct Modified<V: View, M: Modifier> {
@@ -21,7 +26,7 @@ pub struct Modified<V: View, M: Modifier> {
 }
 
 impl<V: View, M: Modifier> View for Modified<V, M> {
-    fn modifiers(&self) -> Option<Box<dyn Iterator<Item = &'_ dyn Modifier>>> {
+    fn modifiers(&self) -> Option<Box<dyn Iterator<Item = &'_ (dyn Modifier + '_)>>> {
         Some(Box::new(
             self.view
                 .modifiers()
