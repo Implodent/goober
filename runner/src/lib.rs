@@ -1,7 +1,9 @@
 use goober_ui::{
     render::RenderContext,
     runtime::{create_render_effect, create_runtime, create_rw_signal, SignalUpdateUntracked},
-    skia_safe, View,
+    skia_safe,
+    unit::Density,
+    View,
 };
 use skia_safe::{
     gpu::{surfaces::render_target, Budgeted, DirectContext, SurfaceOrigin},
@@ -33,6 +35,7 @@ pub fn gl<V: View + 'static>(make_root: impl FnOnce() -> V) {
                 surface,
                 &RenderContext {
                     position: (0, 0).into(),
+                    density: Density(1f32),
                 },
             )
         });

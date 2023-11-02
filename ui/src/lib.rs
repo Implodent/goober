@@ -20,11 +20,11 @@ pub trait View {
     fn size(&self) -> unit::ISize;
     fn render(&self, renderer: &mut dyn Renderer, context: &RenderContext);
 
-    fn boxed(self) -> Box<dyn View>
+    fn boxed<'a>(self) -> Box<dyn View + 'a>
     where
-        Self: Sized,
+        Self: Sized + 'a,
     {
-        Box::new(self) as Box<dyn View>
+        Box::new(self) as Box<dyn View + 'a>
     }
 }
 
@@ -34,7 +34,7 @@ pub trait Views {
 
 impl Views for Vec<Box<dyn View>> {
     fn iter(&self) -> Box<dyn Iterator<Item = &'_ (dyn View + '_)> + '_> {
-        Box::new(self.iter())
+        Box::new(<[Box<dyn View>]>::iter(self.as_ref()).map(|x| x.as_ref()))
     }
 }
 

@@ -7,19 +7,13 @@ pub use skia_safe::Font;
 compile_error!("uhh sorry no skia isn't supported right now :(");
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Text {
-    pub text: Oco<'static, str>,
+pub struct Text<F> {
+    pub text: F,
     pub font: Font,
     pub paint: Paint,
 }
 
-impl Text {
-    pub fn text(self, text: impl Into<Oco<'static, str>>) -> Self {
-        Self {
-            text: text.into(),
-            ..self
-        }
-    }
+impl<F> Text<F> {
     pub fn font(self, font: Font) -> Self {
         Self { font, ..self }
     }
@@ -31,22 +25,24 @@ impl Text {
     }
 }
 
-impl View for Text {
+impl<F: Fn() -> Oco<'static, str>> View for Text<F> {
     fn size(&self) -> unit::ISize {
+        let text = (self.text)();
         self.font
-            .measure_str(&self.text, Some(&self.paint))
+            .measure_str(&text, Some(&self.paint))
             .1
             .round()
             .size()
     }
     fn render(&self, renderer: &mut dyn Renderer, context: &RenderContext) {
-        renderer.draw_text(&self.text, context.position.into(), &self.font, &self.paint);
+        let text = (self.text)();
+        renderer.draw_text(&text, context.position.into(), &self.font, &self.paint);
     }
 }
 
-pub fn text(text: impl Into<Oco<'static, str>>) -> Text {
+pub fn text<F>(text: F) -> Text<F> {
     Text {
-        text: text.into(),
+        text,
         font: Font::default(),
         paint: Paint::default(),
     }

@@ -30,6 +30,7 @@ impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
             renderer.size().width - context.position.x,
             sizes,
         );
+
         for (view, position) in views.into_iter().zip(arranged) {
             view.render(
                 renderer,
