@@ -1,3 +1,6 @@
+mod parse;
+mod window;
+
 use goober_ui::{
     render::RenderContext,
     runtime::{create_render_effect, create_runtime, create_rw_signal, SignalUpdateUntracked},
@@ -5,41 +8,26 @@ use goober_ui::{
     unit::Density,
     View,
 };
-use skia_safe::{
-    gpu::{surfaces::render_target, Budgeted, DirectContext, SurfaceOrigin},
-    ImageInfo,
-};
+use window::{LaunchConfig, WindowEnv};
+use winit::{event_loop::EventLoopBuilder, window::CursorIcon};
 
-pub fn gl<V: View + 'static>(make_root: impl FnOnce() -> V) {
+#[derive(Debug)]
+pub enum EventMessage {
+    RequestRerender,
+    SetCursorIcon(CursorIcon),
+}
+
+pub fn launch<V: View + 'static>(make_root: impl FnOnce() -> V) {
     let runtime = create_runtime();
     let root = make_root();
-    let mut context = DirectContext::new_gl(None, None).unwrap();
-    let image_info = ImageInfo::new_n32_premul(root.size(), None);
-    let surface = create_rw_signal(
-        render_target(
-            &mut context,
-            Budgeted::Yes,
-            &image_info,
-            None,
-            SurfaceOrigin::BottomLeft,
-            None,
-            false,
-            None,
-        )
-        .unwrap(),
-    );
+    let config = LaunchConfig::<()>::builder().build();
 
-    create_render_effect(move |_| {
-        surface.update_untracked(|surface| {
-            root.render(
-                surface,
-                &RenderContext {
-                    position: (0, 0).into(),
-                    density: Density(1f32),
-                },
-            )
-        });
-    });
+    let evl = EventLoopBuilder::<EventMessage>::with_user_event()
+        .build()
+        .unwrap();
+    let proxy = evl.create_proxy();
+
+    let env = WindowEnv::from_config(config.window.clone(), &evl);
 
     runtime.dispose();
 }

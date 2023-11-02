@@ -4,4 +4,9 @@ version.workspace = true
 edition = "2021"
 
 [dependencies]
-goober-ui = { path = "../ui", features = [ "skia", "skia-gpu", "skia-gl" ] }
+gl = "0.14.0"
+glutin = "0.31.1"
+glutin-winit = "0.4.2"
+goober-ui = { path = "../ui" }
+raw-window-handle = "0.5.2"
+winit = "0.29.3"
