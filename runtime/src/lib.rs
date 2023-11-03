@@ -114,6 +114,7 @@ pub use callback::*;
 pub use context::*;
 pub use diagnostics::SpecialNonReactiveZone;
 pub use effect::*;
+pub use futures;
 pub use hydration::{FragmentData, SharedContext};
 pub use memo::*;
 pub use node::Disposer;

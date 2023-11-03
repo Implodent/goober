@@ -628,14 +628,7 @@ pub fn create_runtime() -> RuntimeId {
     Default::default()
 }
 
-#[cfg(not(any(feature = "csr", feature = "hydrate")))]
-slotmap::new_key_type! {
-    /// Unique ID assigned to a Runtime.
-    pub struct RuntimeId;
-}
-
 /// Unique ID assigned to a Runtime.
-#[cfg(any(feature = "csr", feature = "hydrate"))]
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RuntimeId;
 
@@ -660,6 +653,7 @@ where
 {
     let owner =
         with_runtime(|runtime| runtime.owner.get()).expect("runtime should be alive when created");
+
     move |t| {
         with_runtime(|runtime| {
             let prev_observer = runtime.observer.take();

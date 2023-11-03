@@ -1,33 +1,50 @@
-mod parse;
-mod window;
-
 use goober_ui::{
-    render::RenderContext,
-    runtime::{create_render_effect, create_runtime, create_rw_signal, SignalUpdateUntracked},
-    skia_safe,
-    unit::Density,
-    View,
+    runtime::{as_child_of_current_owner, create_render_effect, create_runtime, run_as_child},
+    skia_safe::IPoint,
+    *,
 };
-use window::{LaunchConfig, WindowEnv};
-use winit::{event_loop::EventLoopBuilder, window::CursorIcon};
+use winit::{
+    error::EventLoopError,
+    event::{Event, StartCause, WindowEvent},
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
 
-#[derive(Debug)]
-pub enum EventMessage {
-    RequestRerender,
-    SetCursorIcon(CursorIcon),
-}
+mod renderer;
 
-pub fn launch<V: View + 'static>(make_root: impl FnOnce() -> V) {
-    let runtime = create_runtime();
-    let root = make_root();
-    let config = LaunchConfig::<()>::builder().build();
+pub fn launch<V: View>(make: impl Fn() -> V + 'static) -> Result<(), EventLoopError> {
+    let _rt = create_runtime();
+    let (root, disposer) = as_child_of_current_owner(|()| make())(());
 
-    let evl = EventLoopBuilder::<EventMessage>::with_user_event()
-        .build()
-        .unwrap();
-    let proxy = evl.create_proxy();
+    let event_loop = EventLoop::new()?;
 
-    let env = WindowEnv::from_config(config.window.clone(), &evl);
+    let mut ren = renderer::Render::new(
+        WindowBuilder::new().with_visible(true).with_title("yes"),
+        &event_loop,
+    );
 
-    runtime.dispose();
+    event_loop.run(move |event, explode| {
+        println!("{event:?}");
+
+        match event {
+            winit::event::Event::NewEvents(StartCause::Init) => {
+                explode.set_control_flow(ControlFlow::Wait);
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => explode.exit(),
+            Event::WindowEvent {
+                event: WindowEvent::RedrawRequested,
+                ..
+            }
+            | Event::UserEvent(()) => root.render(
+                &ren.surface.canvas(),
+                &RenderContext {
+                    offset: IPoint::new(0, 0),
+                },
+            ),
+            _ => {}
+        }
+    })
 }
