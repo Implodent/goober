@@ -5,19 +5,15 @@ fn main() -> Result<(), LaunchError> {
 }
 
 fn app() -> impl View {
-    let (read, write) = create_signal(0);
-    let (hovering, set_hover) = create_signal(false);
+    let (counter, counter_set) = create_signal(0);
 
-    text(move || format!("Counter: {} (hovering: {})", read.get(), hovering.get()))
-        .font(Font::from_typeface(
-            Typeface::new("JetBrainsMono Nerd Font Mono", FontStyle::normal())
-                .expect("font unavailable"),
-            40.0,
-        ))
-        .background(Color::BLUE)
-        .padding(20)
+    text(move || format!("Counter: {}", counter.get()))
+        // set the font's size to be a little bigger
+        .font_size(50.0)
+        // bad attempt at making it look like a button ;)
+        .background(Color::new(0xffaaaaaa))
         .on_click(move |button| {
-            write.update(|x| {
+            counter_set.update(|x| {
                 *x = match button {
                     goober_ui::MouseButton::Left => *x + 1,
                     goober_ui::MouseButton::Right => *x - 1,
@@ -25,5 +21,4 @@ fn app() -> impl View {
                 }
             })
         })
-        .hovering(set_hover)
 }

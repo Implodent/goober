@@ -17,6 +17,16 @@ impl<F> Text<F> {
         }
     }
 
+    pub fn font_size(self, size: f32) -> Self {
+        Self {
+            font: self
+                .font
+                .with_size(size)
+                .expect("font wasn't able to scale up"),
+            ..self
+        }
+    }
+
     pub fn paint(self, paint: impl IntoPaint) -> Self {
         Self {
             paint: paint.into_paint(),
