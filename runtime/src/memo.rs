@@ -1,8 +1,7 @@
 use crate::{
-    create_isomorphic_effect, diagnostics::AccessDiagnostics, node::NodeId,
-    on_cleanup, with_runtime, AnyComputation, Runtime, SignalDispose,
-    SignalGet, SignalGetUntracked, SignalStream, SignalWith,
-    SignalWithUntracked,
+    create_isomorphic_effect, diagnostics::AccessDiagnostics, node::NodeId, on_cleanup,
+    with_runtime, AnyComputation, Runtime, SignalDispose, SignalGet, SignalGetUntracked,
+    SignalStream, SignalWith, SignalWithUntracked,
 };
 use std::{any::Any, cell::RefCell, fmt, marker::PhantomData, rc::Rc};
 
@@ -248,9 +247,7 @@ impl<T> PartialEq for Memo<T> {
     }
 }
 
-fn forward_ref_to<T, O, F: FnOnce(&T) -> O>(
-    f: F,
-) -> impl FnOnce(&Option<T>) -> O {
+fn forward_ref_to<T, O, F: FnOnce(&T) -> O>(f: F) -> impl FnOnce(&Option<T>) -> O {
     |maybe_value: &Option<T>| {
         let ref_t = maybe_value
             .as_ref()
@@ -329,15 +326,15 @@ impl<T> SignalWithUntracked for Memo<T> {
         )
     )]
     fn with_untracked<O>(&self, f: impl FnOnce(&T) -> O) -> O {
-        with_runtime(|runtime| {
-            match self.id.try_with_no_subscription(runtime, forward_ref_to(f)) {
+        with_runtime(
+            |runtime| match self.id.try_with_no_subscription(runtime, forward_ref_to(f)) {
                 Ok(t) => t,
                 Err(_) => panic_getting_dead_memo(
                     #[cfg(any(debug_assertions, feature = "ssr"))]
                     self.defined_at,
                 ),
-            }
-        })
+            },
+        )
         .expect("runtime to be alive")
     }
 
@@ -356,11 +353,9 @@ impl<T> SignalWithUntracked for Memo<T> {
     )]
     #[inline]
     fn try_with_untracked<O>(&self, f: impl FnOnce(&T) -> O) -> Option<O> {
-        with_runtime(|runtime| {
-            self.id.try_with_no_subscription(runtime, |v: &T| f(v)).ok()
-        })
-        .ok()
-        .flatten()
+        with_runtime(|runtime| self.id.try_with_no_subscription(runtime, |v: &T| f(v)).ok())
+            .ok()
+            .flatten()
     }
 }
 
@@ -574,8 +569,9 @@ where
 #[track_caller]
 fn format_memo_warning(
     msg: &str,
-    #[cfg(any(debug_assertions, feature = "ssr"))]
-    defined_at: &'static std::panic::Location<'static>,
+    #[cfg(any(debug_assertions, feature = "ssr"))] defined_at: &'static std::panic::Location<
+        'static,
+    >,
 ) -> String {
     let location = std::panic::Location::caller();
 
@@ -598,8 +594,9 @@ fn format_memo_warning(
 #[inline(never)]
 #[track_caller]
 pub(crate) fn panic_getting_dead_memo(
-    #[cfg(any(debug_assertions, feature = "ssr"))]
-    defined_at: &'static std::panic::Location<'static>,
+    #[cfg(any(debug_assertions, feature = "ssr"))] defined_at: &'static std::panic::Location<
+        'static,
+    >,
 ) -> ! {
     panic!(
         "{}",

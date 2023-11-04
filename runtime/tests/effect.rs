@@ -1,6 +1,6 @@
 use leptos_reactive::{
-    batch, create_isomorphic_effect, create_memo, create_runtime,
-    create_rw_signal, create_signal, untrack, SignalGet, SignalSet,
+    batch, create_isomorphic_effect, create_memo, create_runtime, create_rw_signal, create_signal,
+    untrack, SignalGet, SignalSet,
 };
 
 #[test]

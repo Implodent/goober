@@ -1,5 +1,6 @@
 use cfg_if::cfg_if;
 use std::future::Future;
+use tokio::runtime::Handle;
 
 /// Spawns and runs a thread-local [`Future`] in a platform-independent way.
 ///
@@ -81,7 +82,7 @@ where
         else if #[cfg(any(test, doctest))] {
             tokio_test::block_on(fut);
         } else {
-            futures::executor::block_on(fut)
+            Handle::current().block_on(fut);
         }
     }
 }

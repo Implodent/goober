@@ -110,9 +110,7 @@ where
     move || {
         stop();
         if let Some(owner) = owner {
-            _ = with_runtime(|runtime| {
-                runtime.remove_scope_property(owner.0, prop)
-            });
+            _ = with_runtime(|runtime| runtime.remove_scope_property(owner.0, prop));
         }
     }
 }

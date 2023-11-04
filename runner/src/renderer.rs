@@ -6,7 +6,7 @@ use glutin::{
     context::{ContextApi, ContextAttributesBuilder, GlProfile, PossiblyCurrentContext},
     display::GetGlDisplay,
     prelude::{GlConfig, GlDisplay, NotCurrentGlContext},
-    surface::{Surface as GluSfc, SurfaceAttributesBuilder, WindowSurface},
+    surface::{GlSurface, Surface as GluSfc, SurfaceAttributesBuilder, WindowSurface},
 };
 use glutin_winit::DisplayBuilder;
 use goober_ui::skia_safe::{
@@ -20,16 +20,16 @@ use goober_ui::skia_safe::{
 };
 use raw_window_handle::HasRawWindowHandle;
 use winit::{
-    event::Event,
+    dpi::PhysicalSize,
     event_loop::EventLoop,
     window::{Window, WindowBuilder},
 };
 
 pub struct Render {
     pub surface: Surface,
-    gl_surface: GluSfc<WindowSurface>,
-    gr_context: DirectContext,
-    gl_context: PossiblyCurrentContext,
+    pub gl_surface: GluSfc<WindowSurface>,
+    pub gr_context: DirectContext,
+    pub gl_context: PossiblyCurrentContext,
     pub window: Window,
     fb_info: FramebufferInfo,
     num_samples: usize,
@@ -158,6 +158,26 @@ impl Render {
             stencil_size,
             window,
         }
+    }
+
+    pub fn resize(&mut self, size: PhysicalSize<u32>) {
+        self.surface = create_surface(
+            &mut self.window,
+            self.fb_info,
+            &mut self.gr_context,
+            self.num_samples,
+            self.stencil_size,
+        );
+
+        let (width, height): (u32, u32) = size.into();
+
+        self.gl_surface.resize(
+            &self.gl_context,
+            NonZeroU32::new(width.max(1)).unwrap(),
+            NonZeroU32::new(height.max(1)).unwrap(),
+        );
+
+        self.window.request_redraw();
     }
 }
 

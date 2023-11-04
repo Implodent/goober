@@ -2,9 +2,11 @@ pub mod renderer;
 
 use goober_runner::launch;
 use goober_ui::{
-    runtime::{create_signal, Oco, SignalGet},
-    skia_safe::{Color, Color4f, Font, Paint},
-    Text, View,
+    modifier::*,
+    runtime::*,
+    skia_safe::{Color, Font, FontStyle, Typeface},
+    text::*,
+    View,
 };
 
 fn main() -> Result<(), winit::error::EventLoopError> {
@@ -12,10 +14,25 @@ fn main() -> Result<(), winit::error::EventLoopError> {
 }
 
 fn app() -> impl View {
-    let (read, _write) = create_signal(0);
-    Text {
-        text: move || Oco::Owned(format!("yey {}", read.get())),
-        font: Font::default(),
-        paint: Paint::new(Color4f::from(Color::RED), None),
-    }
+    let (read, write) = create_signal(0);
+    let (hovering, set_hover) = create_signal(false);
+
+    text(move || format!("Counter: {} (hovering: {})", read.get(), hovering.get()))
+        .font(Font::from_typeface(
+            Typeface::new("JetBrainsMono Nerd Font Mono", FontStyle::normal())
+                .expect("font unavailable"),
+            40.0,
+        ))
+        .background(Color::BLUE)
+        .padding(20)
+        .on_click(move |button| {
+            write.update(|x| {
+                *x = match button {
+                    goober_ui::MouseButton::Left => *x + 1,
+                    goober_ui::MouseButton::Right => *x - 1,
+                    _ => return,
+                }
+            })
+        })
+        .hovering(set_hover)
 }

@@ -1,6 +1,6 @@
 use crate::{
-    create_isomorphic_effect, create_rw_signal, runtime::with_owner, Owner,
-    RwSignal, SignalUpdate, SignalWith,
+    create_isomorphic_effect, create_rw_signal, runtime::with_owner, Owner, RwSignal, SignalUpdate,
+    SignalWith,
 };
 use std::{cell::RefCell, collections::HashMap, hash::Hash, rc::Rc};
 
@@ -43,9 +43,7 @@ use std::{cell::RefCell, collections::HashMap, hash::Hash, rc::Rc};
 ///  # runtime.dispose()
 /// ```
 #[inline(always)]
-pub fn create_selector<T>(
-    source: impl Fn() -> T + Clone + 'static,
-) -> Selector<T>
+pub fn create_selector<T>(source: impl Fn() -> T + Clone + 'static) -> Selector<T>
 where
     T: PartialEq + Eq + Clone + Hash + 'static,
 {
@@ -66,11 +64,9 @@ where
     T: PartialEq + Eq + Clone + Hash + 'static,
 {
     #[allow(clippy::type_complexity)]
-    let subs: Rc<RefCell<HashMap<T, RwSignal<bool>>>> =
-        Rc::new(RefCell::new(HashMap::new()));
+    let subs: Rc<RefCell<HashMap<T, RwSignal<bool>>>> = Rc::new(RefCell::new(HashMap::new()));
     let v = Rc::new(RefCell::new(None));
-    let owner = Owner::current()
-        .expect("create_selector called outside the reactive system");
+    let owner = Owner::current().expect("create_selector called outside the reactive system");
     let f = Rc::new(f) as Rc<dyn Fn(&T, &T) -> bool>;
 
     create_isomorphic_effect({
@@ -83,9 +79,7 @@ where
             if prev.as_ref() != Some(&next_value) {
                 let subs = { subs.borrow().clone() };
                 for (key, signal) in subs.into_iter() {
-                    if f(&key, &next_value)
-                        || (prev.is_some() && f(&key, prev.as_ref().unwrap()))
-                    {
+                    if f(&key, &next_value) || (prev.is_some() && f(&key, prev.as_ref().unwrap())) {
                         signal.update(|n| *n = true);
                     }
                 }
@@ -173,9 +167,9 @@ where
         let owner = self.owner;
         let read = {
             let mut subs = self.subs.borrow_mut();
-            *(subs.entry(key.clone()).or_insert_with(|| {
-                with_owner(owner, || create_rw_signal(false))
-            }))
+            *(subs
+                .entry(key.clone())
+                .or_insert_with(|| with_owner(owner, || create_rw_signal(false))))
         };
         _ = read.try_with(|n| *n);
         (self.f)(&key, self.v.borrow().as_ref().unwrap())

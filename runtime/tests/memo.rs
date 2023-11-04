@@ -124,12 +124,8 @@ fn diamond_problem() {
     let runtime = create_runtime();
 
     let (name, set_name) = create_signal("Greg Johnston".to_string());
-    let first = create_memo(move |_| {
-        name.get().split_whitespace().next().unwrap().to_string()
-    });
-    let last = create_memo(move |_| {
-        name.get().split_whitespace().nth(1).unwrap().to_string()
-    });
+    let first = create_memo(move |_| name.get().split_whitespace().next().unwrap().to_string());
+    let last = create_memo(move |_| name.get().split_whitespace().nth(1).unwrap().to_string());
 
     let combined_count = Rc::new(Cell::new(0));
     let combined = create_memo({

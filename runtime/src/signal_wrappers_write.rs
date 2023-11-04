@@ -93,9 +93,7 @@ impl<T> SignalSet for SignalSetter<T> {
         match self.inner {
             SignalSetterTypes::Default => {}
             SignalSetterTypes::Write(w) => w.set(new_value),
-            SignalSetterTypes::Mapped(s) => {
-                s.with_value(|setter| setter(new_value))
-            }
+            SignalSetterTypes::Mapped(s) => s.with_value(|setter| setter(new_value)),
         }
     }
 
@@ -106,8 +104,7 @@ impl<T> SignalSet for SignalSetter<T> {
             SignalSetterTypes::Mapped(s) => {
                 let mut new_value = Some(new_value);
 
-                let _ = s
-                    .try_with_value(|setter| setter(new_value.take().unwrap()));
+                let _ = s.try_with_value(|setter| setter(new_value.take().unwrap()));
 
                 new_value
             }
@@ -147,9 +144,7 @@ where
     )]
     pub fn map(mapped_setter: impl Fn(T) + 'static) -> Self {
         Self {
-            inner: SignalSetterTypes::Mapped(store_value(Box::new(
-                mapped_setter,
-            ))),
+            inner: SignalSetterTypes::Mapped(store_value(Box::new(mapped_setter))),
             #[cfg(any(debug_assertions, feature = "ssr"))]
             defined_at: std::panic::Location::caller(),
         }
@@ -240,9 +235,7 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Write(arg0) => {
-                f.debug_tuple("WriteSignal").field(arg0).finish()
-            }
+            Self::Write(arg0) => f.debug_tuple("WriteSignal").field(arg0).finish(),
             Self::Mapped(_) => f.debug_tuple("Mapped").finish(),
             Self::Default => f.debug_tuple("SignalSetter<Default>").finish(),
         }

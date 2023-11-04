@@ -9,5 +9,5 @@ glutin = "0.31.1"
 glutin-winit = "0.4.2"
 goober-ui = { path = "../ui" }
 raw-window-handle = "0.5.2"
-tokio = { version = "1.33.0", features = ["rt", "sync", "time"] }
 winit = "0.29.3"
+tokio.workspace = true

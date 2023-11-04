@@ -1,0 +1,11 @@
+* goober - a Rust UI framework for goobers
+** Why another UI framework
++I got bored so i started doing it lol+
+I haven't seen something closer to Jetpack Compose yet so I decided to make it myself.
+
+** Features
+- [X] Views
+- [ ] Fundamental components (~foundation~)
+  - [ ] Text
+  - [ ] Button
+- [ ] Modifiers

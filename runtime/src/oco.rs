@@ -555,28 +555,6 @@ where
     }
 }
 
-/// A trait to allow getting an Oco<'_, T> either from a function, or from a static value (by cloning it).
-/// This allows components to get the value of, for example, their text, being able to update it.
-pub trait OcoFn<'a, T: ?Sized + ToOwned + 'a> {
-    /// Gets the Oco value from self.
-    fn get(&self) -> Oco<'a, T>;
-}
-
-impl<'a, T: ?Sized + ToOwned + 'a, F: Fn() -> Oco<'a, T>> OcoFn<'a, T> for F {
-    fn get(&self) -> Oco<'a, T> {
-        (self)()
-    }
-}
-
-impl<'a, T: ?Sized + ToOwned + 'a> OcoFn<'a, T> for Oco<'a, T>
-where
-    for<'b> Rc<T>: From<&'b T>,
-{
-    fn get(&self) -> Oco<'a, T> {
-        self.clone()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,6 +1,6 @@
 use crate::{
-    create_rw_signal, MaybeProp, MaybeSignal, Memo, ReadSignal, RwSignal,
-    Signal, SignalGet, SignalWith,
+    create_rw_signal, MaybeProp, MaybeSignal, Memo, ReadSignal, RwSignal, Signal, SignalGet,
+    SignalWith,
 };
 use serde::{Deserialize, Serialize};
 
@@ -48,15 +48,9 @@ impl<T: Serialize> Serialize for MaybeProp<T> {
         S: serde::Serializer,
     {
         match &self.0 {
-            None | Some(MaybeSignal::Static(None)) => {
-                None::<T>.serialize(serializer)
-            }
-            Some(MaybeSignal::Static(Some(value))) => {
-                value.serialize(serializer)
-            }
-            Some(MaybeSignal::Dynamic(signal)) => {
-                signal.with(|value| value.serialize(serializer))
-            }
+            None | Some(MaybeSignal::Static(None)) => None::<T>.serialize(serializer),
+            Some(MaybeSignal::Static(Some(value))) => value.serialize(serializer),
+            Some(MaybeSignal::Dynamic(signal)) => signal.with(|value| value.serialize(serializer)),
         }
     }
 }

@@ -1,8 +1,7 @@
 #[cfg(all(feature = "hydrate", feature = "experimental-islands"))]
 use crate::Owner;
 use crate::{
-    runtime::PinnedFuture, suspense::StreamChunk, with_runtime, ResourceId,
-    SuspenseContext,
+    runtime::PinnedFuture, suspense::StreamChunk, with_runtime, ResourceId, SuspenseContext,
 };
 use futures::stream::FuturesUnordered;
 #[cfg(feature = "experimental-islands")]
@@ -53,10 +52,8 @@ impl SharedContext {
         any(debug_assertions, features = "ssr"),
         instrument(level = "trace", skip_all,)
     )]
-    pub fn serialization_resolvers(
-    ) -> FuturesUnordered<PinnedFuture<(ResourceId, String)>> {
-        with_runtime(|runtime| runtime.serialization_resolvers())
-            .unwrap_or_default()
+    pub fn serialization_resolvers() -> FuturesUnordered<PinnedFuture<(ResourceId, String)>> {
+        with_runtime(|runtime| runtime.serialization_resolvers()).unwrap_or_default()
     }
 
     /// Registers the given [`SuspenseContext`](crate::SuspenseContext) with the current scope,
@@ -268,21 +265,16 @@ impl Default for SharedContext {
             );
             let pending_resources: HashSet<ResourceId> = pending_resources
                 .map_err(|_| ())
-                .and_then(|pr| {
-                    serde_wasm_bindgen::from_value(pr).map_err(|_| ())
-                })
+                .and_then(|pr| serde_wasm_bindgen::from_value(pr).map_err(|_| ()))
                 .unwrap();
             let fragments_with_local_resources = js_sys::Reflect::get(
                 &web_sys::window().unwrap(),
                 &wasm_bindgen::JsValue::from_str("__LEPTOS_LOCAL_ONLY"),
             );
-            let fragments_with_local_resources: HashSet<String> =
-                fragments_with_local_resources
-                    .map_err(|_| ())
-                    .and_then(|pr| {
-                        serde_wasm_bindgen::from_value(pr).map_err(|_| ())
-                    })
-                    .unwrap_or_default();
+            let fragments_with_local_resources: HashSet<String> = fragments_with_local_resources
+                .map_err(|_| ())
+                .and_then(|pr| serde_wasm_bindgen::from_value(pr).map_err(|_| ()))
+                .unwrap_or_default();
 
             let resolved_resources = js_sys::Reflect::get(
                 &web_sys::window().unwrap(),
@@ -290,8 +282,7 @@ impl Default for SharedContext {
             )
             .unwrap(); // unwrap_or(wasm_bindgen::JsValue::NULL);
 
-            let resolved_resources =
-                serde_wasm_bindgen::from_value(resolved_resources).unwrap();
+            let resolved_resources = serde_wasm_bindgen::from_value(resolved_resources).unwrap();
 
             Self {
                 server_resources: pending_resources.clone(),
@@ -302,10 +293,7 @@ impl Default for SharedContext {
                 pending_fragments: Default::default(),
                 #[cfg(feature = "experimental-islands")]
                 no_hydrate: true,
-                #[cfg(all(
-                    feature = "hydrate",
-                    feature = "experimental-islands"
-                ))]
+                #[cfg(all(feature = "hydrate", feature = "experimental-islands"))]
                 islands: Default::default(),
             }
         }
@@ -320,10 +308,7 @@ impl Default for SharedContext {
                 fragments_with_local_resources: Default::default(),
                 #[cfg(feature = "experimental-islands")]
                 no_hydrate: true,
-                #[cfg(all(
-                    feature = "hydrate",
-                    feature = "experimental-islands"
-                ))]
+                #[cfg(all(feature = "hydrate", feature = "experimental-islands"))]
                 islands: Default::default(),
             }
         }

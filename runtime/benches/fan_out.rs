@@ -50,10 +50,7 @@ fn sycamore_fan_out(c: &mut Criterion) {
                     .collect::<Vec<_>>();
                 assert_eq!(memos.iter().map(|m| *(*m.get())).sum::<i32>(), 0);
                 sig.set(1);
-                assert_eq!(
-                    memos.iter().map(|m| *(*m.get())).sum::<i32>(),
-                    1000
-                );
+                assert_eq!(memos.iter().map(|m| *(*m.get())).sum::<i32>(), 1000);
             });
             unsafe { d.dispose() };
         });

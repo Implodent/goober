@@ -1,6 +1,6 @@
 use leptos_reactive::{
-    create_isomorphic_effect, create_runtime, create_signal, signal_prelude::*,
-    SignalGetUntracked, SignalSetUntracked,
+    create_isomorphic_effect, create_runtime, create_signal, signal_prelude::*, SignalGetUntracked,
+    SignalSetUntracked,
 };
 
 #[test]
@@ -50,8 +50,7 @@ fn untracked_get_doesnt_trigger_effect() {
     create_isomorphic_effect({
         let b = b.clone();
         move |_| {
-            let formatted =
-                format!("Values are {} and {}", a.get(), a2.get_untracked());
+            let formatted = format!("Values are {} and {}", a.get(), a2.get_untracked());
             *b.borrow_mut() = formatted;
         }
     });

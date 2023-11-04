@@ -73,9 +73,7 @@ pub trait Callable<In: 'static, Out: 'static = ()> {
 /// }
 /// ```
 
-pub struct Callback<In: 'static, Out: 'static = ()>(
-    StoredValue<Box<dyn Fn(In) -> Out>>,
-);
+pub struct Callback<In: 'static, Out: 'static = ()>(StoredValue<Box<dyn Fn(In) -> Out>>);
 
 impl<In> fmt::Debug for Callback<In> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
@@ -168,9 +166,7 @@ impl<In, Out> Fn<(In,)> for Callback<In, Out> {
 
 /// A callback type that is `Send` and `Sync` if its input type is `Send` and `Sync`.
 /// Otherwise, you can use exactly the way you use [`Callback`].
-pub struct SyncCallback<In: 'static, Out: 'static = ()>(
-    StoredValue<Arc<dyn Fn(In) -> Out>>,
-);
+pub struct SyncCallback<In: 'static, Out: 'static = ()>(StoredValue<Arc<dyn Fn(In) -> Out>>);
 
 impl<In> fmt::Debug for SyncCallback<In> {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
@@ -265,13 +261,12 @@ mod tests {
             *,
         };
 
-        let _callback: Callback<String, HtmlElement<AnyElement>> =
-            (|x: String| {
-                view! {
-                    <h1>{x}</h1>
-                }
-            })
-            .into();
+        let _callback: Callback<String, HtmlElement<AnyElement>> = (|x: String| {
+            view! {
+                <h1>{x}</h1>
+            }
+        })
+        .into();
         rt.dispose();
     }
 
@@ -291,13 +286,12 @@ mod tests {
 
         let rt = create_runtime();
 
-        let _callback: SyncCallback<String, HtmlElement<AnyElement>> =
-            (|x: String| {
-                view! {
-                    <h1>{x}</h1>
-                }
-            })
-            .into();
+        let _callback: SyncCallback<String, HtmlElement<AnyElement>> = (|x: String| {
+            view! {
+                <h1>{x}</h1>
+            }
+        })
+        .into();
 
         rt.dispose();
     }

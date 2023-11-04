@@ -1,6 +1,4 @@
-use leptos_reactive::{
-    create_runtime, create_signal, watch, SignalGet, SignalSet,
-};
+use leptos_reactive::{create_runtime, create_signal, watch, SignalGet, SignalSet};
 use std::{cell::RefCell, rc::Rc};
 
 #[test]
@@ -114,8 +112,7 @@ fn watch_ignores_callback() {
             let s = s.clone();
 
             move |a, _, _| {
-                let formatted =
-                    format!("Value a is {}; Value b is {}", a, b.get());
+                let formatted = format!("Value a is {}; Value b is {}", a, b.get());
                 *s.borrow_mut() = formatted;
             }
         },

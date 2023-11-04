@@ -3,6 +3,7 @@ members = ["runtime", "ui", "runner"]
 resolver = "2"
 
 [workspace.dependencies]
+tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "sync", "time"] }
 
 [workspace.package]
 version = "0.1.0"

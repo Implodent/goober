@@ -1,9 +1,7 @@
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn rs_deep_update(c: &mut Criterion) {
-    use reactive_signals::{
-        runtimes::ClientRuntime, signal, types::Func, Signal,
-    };
+    use reactive_signals::{runtimes::ClientRuntime, signal, types::Func, Signal};
 
     c.bench_function("rs_deep_update", |b| {
         b.iter(|| {

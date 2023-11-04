@@ -3,13 +3,11 @@ use crate::SharedContext;
 #[cfg(debug_assertions)]
 use crate::SpecialNonReactiveZone;
 use crate::{
-    create_isomorphic_effect, create_memo, create_render_effect, create_signal,
-    queue_microtask, runtime::with_runtime, serialization::Serializable,
-    signal_prelude::format_signal_warning, spawn::spawn_local,
-    suspense::LocalStatus, use_context, GlobalSuspenseContext, Memo,
-    ReadSignal, ScopeProperty, Signal, SignalDispose, SignalGet,
-    SignalGetUntracked, SignalSet, SignalUpdate, SignalWith, SuspenseContext,
-    WriteSignal,
+    create_isomorphic_effect, create_memo, create_render_effect, create_signal, queue_microtask,
+    runtime::with_runtime, serialization::Serializable, signal_prelude::format_signal_warning,
+    spawn::spawn_local, suspense::LocalStatus, use_context, GlobalSuspenseContext, Memo,
+    ReadSignal, ScopeProperty, Signal, SignalDispose, SignalGet, SignalGetUntracked, SignalSet,
+    SignalUpdate, SignalWith, SuspenseContext, WriteSignal,
 };
 use std::{
     any::Any,
@@ -187,12 +185,7 @@ where
     T: Serializable + 'static,
     Fu: Future<Output = T> + 'static,
 {
-    create_resource_helper(
-        source,
-        fetcher,
-        None,
-        ResourceSerialization::Blocking,
-    )
+    create_resource_helper(source, fetcher, None, ResourceSerialization::Blocking)
 }
 
 fn create_resource_helper<S, T, Fu>(
@@ -212,9 +205,7 @@ where
     let (loading, set_loading) = create_signal(false);
 
     //crate::macros::debug_warn!("creating fetcher");
-    let fetcher = Rc::new(move |s| {
-        Box::pin(fetcher(s)) as Pin<Box<dyn Future<Output = T>>>
-    });
+    let fetcher = Rc::new(move |s| Box::pin(fetcher(s)) as Pin<Box<dyn Future<Output = T>>>);
     let source = create_memo(move |_| source());
 
     let r = Rc::new(ResourceState {
@@ -351,9 +342,7 @@ where
 
     let (loading, set_loading) = create_signal(false);
 
-    let fetcher = Rc::new(move |s| {
-        Box::pin(fetcher(s)) as Pin<Box<dyn Future<Output = T>>>
-    });
+    let fetcher = Rc::new(move |s| Box::pin(fetcher(s)) as Pin<Box<dyn Future<Output = T>>>);
     let source = create_memo(move |_| source());
 
     let r = Rc::new(ResourceState {
@@ -460,18 +449,14 @@ where
                     set_loading.update(|n| *n = false);
                 }
             };
-            let resolve = wasm_bindgen::closure::Closure::wrap(
-                Box::new(resolve) as Box<dyn Fn(String)>,
-            );
+            let resolve =
+                wasm_bindgen::closure::Closure::wrap(Box::new(resolve) as Box<dyn Fn(String)>);
             let resource_resolvers = js_sys::Reflect::get(
                 &web_sys::window().unwrap(),
                 &wasm_bindgen::JsValue::from_str("__LEPTOS_RESOURCE_RESOLVERS"),
             )
-            .expect_throw(
-                "no __LEPTOS_RESOURCE_RESOLVERS found in the JS global scope",
-            );
-            let id = serde_json::to_string(&id)
-                .expect_throw("could not serialize Resource ID");
+            .expect_throw("no __LEPTOS_RESOURCE_RESOLVERS found in the JS global scope");
+            let id = serde_json::to_string(&id).expect_throw("could not serialize Resource ID");
             _ = js_sys::Reflect::set(
                 &resource_resolvers,
                 &wasm_bindgen::JsValue::from_str(&id),
@@ -543,10 +528,8 @@ where
     pub fn loading(&self) -> Signal<bool> {
         #[allow(unused_variables)]
         let (loading, is_from_server) = with_runtime(|runtime| {
-            let loading = runtime
-                .resource(self.id, |resource: &ResourceState<S, T>| {
-                    resource.loading
-                });
+            let loading =
+                runtime.resource(self.id, |resource: &ResourceState<S, T>| resource.loading);
             #[cfg(feature = "hydrate")]
             let is_from_server = runtime
                 .shared_context
@@ -571,10 +554,7 @@ where
             let (initial, set_initial) = create_signal(true);
             queue_microtask(move || set_initial.set(false));
             Signal::derive(move || {
-                if is_from_server
-                    && initial.get()
-                    && use_context::<SuspenseContext>().is_none()
-                {
+                if is_from_server && initial.get() && use_context::<SuspenseContext>().is_none() {
                     true
                 } else {
                     loading.get()
@@ -705,13 +685,9 @@ impl<S, T> SignalUpdate for Resource<S, T> {
             runtime.try_resource(self.id, |resource: &ResourceState<S, T>| {
                 if resource.loading.get_untracked() {
                     resource.version.set(resource.version.get() + 1);
-                    for suspense_context in
-                        resource.suspense_contexts.borrow().iter()
-                    {
-                        suspense_context.decrement(
-                            resource.serializable
-                                != ResourceSerialization::Local,
-                        );
+                    for suspense_context in resource.suspense_contexts.borrow().iter() {
+                        suspense_context
+                            .decrement(resource.serializable != ResourceSerialization::Local);
                     }
                 }
                 resource.set_loading.set(false);
@@ -1188,8 +1164,7 @@ where
     ) -> Option<U> {
         let global_suspense_cx = use_context::<GlobalSuspenseContext>();
         let suspense_cx = use_context::<SuspenseContext>();
-        let (was_loaded, v) =
-            self.value.try_with(|n| (n.is_some(), f(n))).ok()?;
+        let (was_loaded, v) = self.value.try_with(|n| (n.is_some(), f(n))).ok()?;
 
         self.handle_result(
             location,
@@ -1219,9 +1194,7 @@ where
                         None => LocalStatus::SerializableOnly,
                         Some(LocalStatus::LocalOnly) => LocalStatus::LocalOnly,
                         Some(LocalStatus::Mixed) => LocalStatus::Mixed,
-                        Some(LocalStatus::SerializableOnly) => {
-                            LocalStatus::SerializableOnly
-                        }
+                        Some(LocalStatus::SerializableOnly) => LocalStatus::SerializableOnly,
                     });
                 });
             }
@@ -1256,9 +1229,7 @@ where
             crate::on_cleanup({
                 let suspense_contexts = Rc::clone(&suspense_contexts);
                 move || {
-                    if let Ok(ref mut contexts) =
-                        suspense_contexts.try_borrow_mut()
-                    {
+                    if let Ok(ref mut contexts) = suspense_contexts.try_borrow_mut() {
                         contexts.remove(&s);
                     }
                 }
@@ -1267,8 +1238,7 @@ where
 
         let increment = move |_: Option<()>| {
             if let Some(s) = &suspense_cx {
-                if let Ok(ref mut contexts) = suspense_contexts.try_borrow_mut()
-                {
+                if let Ok(ref mut contexts) = suspense_contexts.try_borrow_mut() {
                     if !contexts.contains(s) {
                         contexts.insert(*s);
 
@@ -1276,9 +1246,7 @@ where
                         // because the context has been tracked here
                         // on the first read, resource is already loading without having incremented
                         if !has_value || force_suspend {
-                            s.increment(
-                                serializable != ResourceSerialization::Local,
-                            );
+                            s.increment(serializable != ResourceSerialization::Local);
                             if serializable == ResourceSerialization::Blocking {
                                 s.should_block.set_value(true);
                             }
@@ -1288,17 +1256,13 @@ where
             }
 
             if let Some(g) = &global_suspense_cx {
-                if let Ok(ref mut contexts) = suspense_contexts.try_borrow_mut()
-                {
+                if let Ok(ref mut contexts) = suspense_contexts.try_borrow_mut() {
                     g.with_inner(|s| {
                         if !contexts.contains(s) {
                             contexts.insert(*s);
 
                             if !has_value || force_suspend {
-                                s.increment(
-                                    serializable
-                                        != ResourceSerialization::Local,
-                                );
+                                s.increment(serializable != ResourceSerialization::Local);
                             }
                         }
                     })
@@ -1331,9 +1295,7 @@ where
         // if it's 1) in normal mode and is read, or
         // 2) is in island mode and read in an island, tell it to ship
         #[cfg(feature = "experimental-islands")]
-        if self.should_send_to_client.get().is_none()
-            && !SharedContext::no_hydrate()
-        {
+        if self.should_send_to_client.get().is_none() && !SharedContext::no_hydrate() {
             self.should_send_to_client.set(Some(true));
         }
 
@@ -1359,9 +1321,7 @@ where
             let suspense_contexts = self.suspense_contexts.clone();
 
             for suspense_context in suspense_contexts.borrow().iter() {
-                suspense_context.increment(
-                    self.serializable != ResourceSerialization::Local,
-                );
+                suspense_context.increment(self.serializable != ResourceSerialization::Local);
                 if self.serializable == ResourceSerialization::Blocking {
                     suspense_context.should_block.set_value(true);
                 }
@@ -1384,9 +1344,7 @@ where
                     }
 
                     for suspense_context in suspense_contexts.borrow().iter() {
-                        suspense_context.decrement(
-                            serializable != ResourceSerialization::Local,
-                        );
+                        suspense_context.decrement(serializable != ResourceSerialization::Local);
                     }
                 }
             })
@@ -1412,14 +1370,11 @@ where
                 let mut tx = tx.clone();
                 move |value| {
                     if let Some(value) = value.as_ref() {
-                        tx.try_send((
-                            id,
-                            value.ser().expect("could not serialize Resource"),
-                        ))
-                        .expect(
-                            "failed while trying to write to Resource \
+                        tx.try_send((id, value.ser().expect("could not serialize Resource")))
+                            .expect(
+                                "failed while trying to write to Resource \
                              serializer",
-                        );
+                            );
                     }
                 }
             })

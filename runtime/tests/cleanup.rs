@@ -1,8 +1,7 @@
 #[test]
 fn cleanup() {
     use leptos_reactive::{
-        create_isomorphic_effect, create_runtime, create_signal, on_cleanup,
-        SignalSet, SignalWith,
+        create_isomorphic_effect, create_runtime, create_signal, on_cleanup, SignalSet, SignalWith,
     };
     use std::{cell::Cell, rc::Rc};
 

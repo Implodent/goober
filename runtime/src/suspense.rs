@@ -1,9 +1,9 @@
 //! Types that handle asynchronous data loading via `<Suspense/>`.
 
 use crate::{
-    create_isomorphic_effect, create_memo, create_rw_signal, create_signal,
-    oco::Oco, queue_microtask, signal::SignalGet, store_value, Memo,
-    ReadSignal, RwSignal, SignalSet, SignalUpdate, StoredValue, WriteSignal,
+    create_isomorphic_effect, create_memo, create_rw_signal, create_signal, oco::Oco,
+    queue_microtask, signal::SignalGet, store_value, Memo, ReadSignal, RwSignal, SignalSet,
+    SignalUpdate, StoredValue, WriteSignal,
 };
 use futures::Future;
 use std::{cell::RefCell, collections::VecDeque, pin::Pin, rc::Rc};
@@ -141,9 +141,7 @@ impl SuspenseContext {
                     None => LocalStatus::SerializableOnly,
                     Some(LocalStatus::LocalOnly) => LocalStatus::LocalOnly,
                     Some(LocalStatus::Mixed) => LocalStatus::Mixed,
-                    Some(LocalStatus::SerializableOnly) => {
-                        LocalStatus::SerializableOnly
-                    }
+                    Some(LocalStatus::SerializableOnly) => LocalStatus::SerializableOnly,
                 });
             });
         } else {

@@ -1,7 +1,7 @@
 use crate::{
-    create_isomorphic_effect, on_cleanup, runtime::untrack, store_value, Memo,
-    Oco, ReadSignal, RwSignal, SignalDispose, SignalGet, SignalGetUntracked,
-    SignalStream, SignalWith, SignalWithUntracked, StoredValue,
+    create_isomorphic_effect, on_cleanup, runtime::untrack, store_value, Memo, Oco, ReadSignal,
+    RwSignal, SignalDispose, SignalGet, SignalGetUntracked, SignalStream, SignalWith,
+    SignalWithUntracked, StoredValue,
 };
 use std::{fmt::Debug, rc::Rc};
 
@@ -151,9 +151,7 @@ impl<T: Clone> SignalGetUntracked for Signal<T> {
         match &self.inner {
             SignalTypes::ReadSignal(s) => s.try_get_untracked(),
             SignalTypes::Memo(m) => m.try_get_untracked(),
-            SignalTypes::DerivedSignal(f) => {
-                untrack(|| f.try_with_value(|f| f()))
-            }
+            SignalTypes::DerivedSignal(f) => untrack(|| f.try_with_value(|f| f())),
         }
     }
 }
@@ -203,9 +201,7 @@ impl<T> SignalWithUntracked for Signal<T> {
         match self.inner {
             SignalTypes::ReadSignal(r) => r.try_with_untracked(f),
             SignalTypes::Memo(m) => m.try_with_untracked(f),
-            SignalTypes::DerivedSignal(s) => {
-                untrack(move || s.try_with_value(|t| f(&t())))
-            }
+            SignalTypes::DerivedSignal(s) => untrack(move || s.try_with_value(|t| f(&t()))),
         }
     }
 }
@@ -390,9 +386,7 @@ where
         };
 
         Self {
-            inner: SignalTypes::DerivedSignal(store_value(Box::new(
-                derived_signal,
-            ))),
+            inner: SignalTypes::DerivedSignal(store_value(Box::new(derived_signal))),
             #[cfg(any(debug_assertions, feature = "ssr"))]
             defined_at: std::panic::Location::caller(),
         }
@@ -461,9 +455,7 @@ impl<T> Copy for SignalTypes<T> {}
 impl<T> std::fmt::Debug for SignalTypes<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::ReadSignal(arg0) => {
-                f.debug_tuple("ReadSignal").field(arg0).finish()
-            }
+            Self::ReadSignal(arg0) => f.debug_tuple("ReadSignal").field(arg0).finish(),
             Self::Memo(arg0) => f.debug_tuple("Memo").field(arg0).finish(),
             Self::DerivedSignal(_) => f.debug_tuple("DerivedSignal").finish(),
         }
@@ -475,9 +467,7 @@ impl<T> PartialEq for SignalTypes<T> {
         match (self, other) {
             (Self::ReadSignal(l0), Self::ReadSignal(r0)) => l0 == r0,
             (Self::Memo(l0), Self::Memo(r0)) => l0 == r0,
-            (Self::DerivedSignal(l0), Self::DerivedSignal(r0)) => {
-                std::ptr::eq(l0, r0)
-            }
+            (Self::DerivedSignal(l0), Self::DerivedSignal(r0)) => std::ptr::eq(l0, r0),
             _ => false,
         }
     }
@@ -1071,9 +1061,9 @@ impl<T> MaybeProp<T> {
         )
     )]
     pub fn with_untracked<O>(&self, f: impl FnOnce(&T) -> O) -> Option<O> {
-        self.0.as_ref().and_then(|inner| {
-            inner.with_untracked(|value| value.as_ref().map(f))
-        })
+        self.0
+            .as_ref()
+            .and_then(|inner| inner.with_untracked(|value| value.as_ref().map(f)))
     }
 
     /// Applies a function to the current value, returning the result, without
@@ -1091,9 +1081,7 @@ impl<T> MaybeProp<T> {
     pub fn try_with_untracked<O>(&self, f: impl FnOnce(&T) -> O) -> Option<O> {
         self.0
             .as_ref()
-            .and_then(|inner| {
-                inner.try_with_untracked(|value| value.as_ref().map(f))
-            })
+            .and_then(|inner| inner.try_with_untracked(|value| value.as_ref().map(f)))
             .flatten()
     }
 }
@@ -1138,9 +1126,7 @@ impl<T: Clone> SignalStream<Option<T>> for MaybeProp<T> {
             fields(ty = %std::any::type_name::<T>())
         )
     )]
-    fn to_stream(
-        &self,
-    ) -> std::pin::Pin<Box<dyn futures::Stream<Item = Option<T>>>> {
+    fn to_stream(&self) -> std::pin::Pin<Box<dyn futures::Stream<Item = Option<T>>>> {
         match &self.0 {
             None => Box::pin(futures::stream::once(async move { None })),
             Some(MaybeSignal::Static(t)) => {
