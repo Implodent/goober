@@ -4,7 +4,6 @@ mod sk;
 pub use sk::*;
 pub mod text;
 
-pub use goober_runtime as runtime;
 pub use skia_safe;
 use skia_safe::{Canvas, Contains, Font, IPoint, IRect, ISize, Paint, Point};
 

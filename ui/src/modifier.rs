@@ -1,4 +1,4 @@
-use runtime::{SignalSet, SignalUpdate, WriteSignal};
+use goober_runtime::{SignalSet, SignalUpdate, WriteSignal};
 
 use super::*;
 

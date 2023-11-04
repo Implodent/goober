@@ -680,12 +680,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "goober"
+version = "0.1.0"
+dependencies = [
+ "goober",
+ "goober-runner",
+ "goober-runtime",
+ "goober-ui",
+]
+
+[[package]]
 name = "goober-runner"
 version = "0.1.0"
 dependencies = [
  "gl",
  "glutin",
  "glutin-winit",
+ "goober-runtime",
  "goober-ui",
  "raw-window-handle 0.5.2",
  "tokio",

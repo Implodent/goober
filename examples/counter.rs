@@ -1,15 +1,6 @@
-pub mod renderer;
+use goober::prelude::*;
 
-use goober_runner::launch;
-use goober_ui::{
-    modifier::*,
-    runtime::*,
-    skia_safe::{Color, Font, FontStyle, Typeface},
-    text::*,
-    View,
-};
-
-fn main() -> Result<(), winit::error::EventLoopError> {
+fn main() -> Result<(), LaunchError> {
     launch(app)
 }
 

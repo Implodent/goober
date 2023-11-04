@@ -1,5 +1,5 @@
 [workspace]
-members = ["runtime", "ui", "runner"]
+members = ["runtime", "ui", "runner", "."]
 resolver = "2"
 
 [workspace.dependencies]
@@ -7,3 +7,16 @@ tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "sync", "time
 
 [workspace.package]
 version = "0.1.0"
+
+[package]
+name = "goober"
+edition = "2021"
+version.workspace = true
+
+[dependencies]
+goober-ui.path = "ui"
+goober-runner.path = "runner"
+goober-runtime.path = "runtime"
+
+[dev-dependencies]
+goober.path = "."

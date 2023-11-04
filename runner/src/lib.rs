@@ -1,25 +1,25 @@
 use std::rc::Rc;
 
 use glutin::surface::GlSurface;
+use goober_runtime::{
+    as_child_of_current_owner, create_render_effect, create_runtime, create_trigger, store_value,
+    with_owner, Owner,
+};
 use goober_ui::{
-    runtime::{
-        as_child_of_current_owner, create_render_effect, create_runtime, create_trigger,
-        store_value, with_owner, Owner,
-    },
     skia_safe::{Color, IPoint, ISize, Point},
     *,
 };
 
 use winit::{
-    error::EventLoopError,
     event::{ElementState, Event, MouseButton as WinitMouseButton, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
 };
 
 mod renderer;
+pub use winit::error::EventLoopError as Error;
 
-pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), EventLoopError> {
+pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), Error> {
     let tokio = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

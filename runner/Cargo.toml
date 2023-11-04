@@ -8,6 +8,7 @@ gl = "0.14.0"
 glutin = "0.31.1"
 glutin-winit = "0.4.2"
 goober-ui = { path = "../ui" }
+goober-runtime.path = "../runtime"
 raw-window-handle = "0.5.2"
 winit = "0.29.3"
 tokio.workspace = true
