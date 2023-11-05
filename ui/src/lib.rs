@@ -1,6 +1,7 @@
 pub mod alignment;
 pub mod arrangement;
 pub mod button;
+pub mod canvas;
 pub mod modifier;
 mod sk;
 pub mod stacking;
