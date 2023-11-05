@@ -20,3 +20,7 @@ goober-runtime.path = "runtime"
 
 [dev-dependencies]
 goober.path = "."
+
+[features]
+nightly = ["goober-runtime/nightly"]
+default = []

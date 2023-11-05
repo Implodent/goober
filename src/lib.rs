@@ -15,7 +15,7 @@ pub mod prelude {
         skia_safe as skia,
         stacking::{stack_x, stack_y, stack_z},
         text::text,
-        IntoDp, Modifier, View,
+        IntoDp, Modifier, MouseButton, View,
     };
 
     pub use runtime::signal_prelude::*;

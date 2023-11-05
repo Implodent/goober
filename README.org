@@ -1,11 +1,64 @@
-* goober - a Rust UI framework for goobers
+* goober - an experimental UI framework for Rustaceans
 ** Why another UI framework
 +I got bored so i started doing it lol+
 I haven't seen something closer to Jetpack Compose yet so I decided to make it myself.
 
-** Features
-- [X] Views
-- [ ] Fundamental components (~foundation~)
-  - [ ] Text
-  - [ ] Button
-- [ ] Modifiers
+** Is it prod. ready?
+No. Not at all. I do think that when 0.1 gets released, it would be at least usable.
+
+** Example
+#+begin_src rust
+use goober::prelude::*;
+
+fn app() -> impl View {
+    let (counter, counter_set) = create_signal(0);
+
+    text(move || format!("Counter: {}", counter.get()))
+        // set the font's size to be a little bigger
+        .font_size(50.0)
+        // bad attempt at making it look like a button (setting the background to something darker)
+        .background(Color::new(0xffaaaaaa)) // set an ARGB color (0xff is alpha, that means the color fully opaque, i.e. solid) as the background
+        // set an on click handler
+        .on_click(move |button| {
+            counter_set.update(|x| {
+                ,*x = match button {
+                    MouseButton::Left => *x + 1, // if you left click, increment
+                    MouseButton::Right => *x - 1, // if you right click, decrement
+                    _ => return,
+                }
+            })
+        })
+}
+#+end_src
+
+This is a component. It defines a signal (a piece of reactive data)
+
+Now, you could launch it in a window (using ~winit~) with this snippet:
+#+begin_src rust
+use goober::prelude::*; // <- contains launch and LaunchError
+
+fn main() -> Result<(), LaunchError> {
+    launch(app)
+}
+#+end_src
+
+** How me use framework
+If you don't want an unstable, experimental and possibly not working framework, don't. Wait for 0.1 or something.
+But if you don't care about instability, add the framework as a git dependency:
+*** Cargo command
+#+begin_src shell
+cargo add goober --git https://github.com/Implodent/goober
+#+end_src
+*** Cargo.toml snippet
+#+begin_src toml
+[dependencies]
+goober = { git = "https://github.com/Implodent/goober", branch = "main" }
+#+end_src
+
+
+*** Features
+You could add the =nightly= feature, with it you could call signals as functions (example: ~signal()~ instead of ~singal.get()~, ~signal_set(123)~ instead of ~signal_set.set(123)~, etc.).
+
+** Architecture
+- Reactivity: a modified version of ~leptos_reactive~ ([[./runtime][runtime crate]])
+- Rendering: the [[skia.org][Skia]] 2D rendering engine
