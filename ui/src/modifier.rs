@@ -100,6 +100,7 @@ impl Modifier for Offset {
             &RenderContext {
                 offset: how.offset + self.0,
                 constraints: how.constraints,
+                ..*how
             },
         )
     }
@@ -107,6 +108,7 @@ impl Modifier for Offset {
         view.measure(&MeasureContext {
             offset: context.offset + self.0,
             constraints: context.constraints,
+            ..*context
         })
     }
 }
@@ -133,6 +135,7 @@ impl Modifier for Padding {
                         height: how.constraints.max.height - self.0.bottom(),
                     },
                 },
+                ..*how
             },
         )
     }
@@ -153,12 +156,14 @@ impl Modifier for Padding {
                     height: context.constraints.max.height - self.0.bottom(),
                 },
             },
+            ..*context
         });
 
         MeasureResult {
             rect: mr
                 .rect
                 .with_adjustment(-self.0.left, -self.0.top, self.0.right, self.0.bottom),
+            ..mr
         }
     }
 }

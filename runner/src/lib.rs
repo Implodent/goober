@@ -11,6 +11,7 @@ use goober_ui::{
 };
 
 use winit::{
+    dpi::PhysicalSize,
     event::{ElementState, Event, MouseButton as WinitMouseButton, StartCause, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::{Window, WindowBuilder},
@@ -40,13 +41,7 @@ pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), E
                 let canvas = ren.surface.canvas();
                 canvas.clear(Color::WHITE);
 
-                root.render(
-                    canvas,
-                    &RenderContext {
-                        offset: IPoint::new(0, 0),
-                        constraints: constraints(&ren.window),
-                    },
-                );
+                root.render(canvas, &render_cx(&ren.window));
 
                 ren.gr_context.flush_and_submit();
                 ren.gl_surface.swap_buffers(&ren.gl_context).unwrap();
@@ -94,10 +89,7 @@ pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), E
                             WinitMouseButton::Other(other) => MouseButton::Other(other),
                         },
                     ),
-                    &RenderContext {
-                        offset: IPoint::new(0, 0),
-                        constraints: ren.with_value(|ren| constraints(&ren.window)),
-                    },
+                    &ren.with_value(|ren| render_cx(&ren.window)),
                 )
             }),
             Event::WindowEvent {
@@ -108,10 +100,7 @@ pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), E
                 with_owner(owner, || {
                     root.ev(
                         &goober_ui::Event::CursorMove(last_mouse),
-                        &RenderContext {
-                            offset: IPoint::new(0, 0),
-                            constraints: ren.with_value(|ren| constraints(&ren.window)),
-                        },
+                        &ren.with_value(|ren| render_cx(&ren.window)),
                     )
                 })
             }
@@ -128,5 +117,17 @@ fn constraints(window: &Window) -> Constraints {
             height: size.height as i32,
             width: size.width as i32,
         },
+    }
+}
+
+fn render_cx(window: &Window) -> RenderContext {
+    let PhysicalSize { width, height } = window.inner_size();
+    let (width, height): (i32, i32) = (width.try_into().unwrap(), height.try_into().unwrap());
+
+    RenderContext {
+        offset: IPoint::new(0, 0),
+        constraints: constraints(window),
+        space: ISize { width, height },
+        density: Density(window.scale_factor() as f32),
     }
 }

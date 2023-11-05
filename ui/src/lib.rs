@@ -14,6 +14,8 @@ use skia_safe::{Canvas, Contains, Font, IPoint, IRect, ISize, Paint, Point};
 pub struct RenderContext {
     pub offset: IPoint,
     pub constraints: Constraints,
+    pub space: ISize,
+    pub density: Density,
 }
 
 impl Into<MeasureContext> for RenderContext {
@@ -21,6 +23,8 @@ impl Into<MeasureContext> for RenderContext {
         MeasureContext {
             offset: self.offset,
             constraints: self.constraints,
+            space: self.space,
+            density: self.density,
         }
     }
 }
@@ -60,6 +64,8 @@ impl Constraints {
 pub struct MeasureContext {
     pub offset: IPoint,
     pub constraints: Constraints,
+    pub space: ISize,
+    pub density: Density,
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -150,3 +156,48 @@ macro_rules! views_for_tuple {
 }
 
 views_for_tuple!(A_ B_ C_ D_ E_ F_ G_ H_ I_ J_ K_ L_ M_ N_ O_ P_ Q_ R_ S_ T_ U_ V_ W_ X_ Y_ Z_);
+
+/// Density specifies how much pixels are in a [`Dp`].
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Density(pub f32);
+
+impl Density {
+    pub fn pixels(&self, dp: Dp) -> f32 {
+        dp.0 * self.0
+    }
+
+    pub fn round_to_pixels(&self, dp: Dp) -> i32 {
+        let px = self.pixels(dp);
+
+        px.round() as i32
+    }
+
+    // amazing
+    pub fn dp(&self, pixels: impl IntoDp) -> Dp {
+        (pixels.dp().0 / self.0).dp()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct Dp(pub f32);
+
+impl Dp {
+    pub const ZERO: Self = Self(0f32);
+}
+
+pub trait IntoDp {
+    fn dp(self) -> Dp;
+}
+
+impl IntoDp for f32 {
+    #[inline(always)]
+    fn dp(self) -> Dp {
+        Dp(self)
+    }
+}
+
+impl IntoDp for i32 {
+    fn dp(self) -> Dp {
+        Dp(self as f32)
+    }
+}

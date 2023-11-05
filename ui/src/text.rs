@@ -37,16 +37,14 @@ impl<F> Text<F> {
 
 impl<F: StrFn<'static>> View for Text<F> {
     fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        MeasureResult {
-            rect: IRect::from_pt_size(
-                context.offset,
-                self.font
-                    .measure_str(self.text.oco().as_str(), Some(&self.paint))
-                    .1
-                    .round()
-                    .size(),
-            ),
-        }
+        MeasureResult::new(IRect::from_pt_size(
+            context.offset,
+            self.font
+                .measure_str(self.text.oco().as_str(), Some(&self.paint))
+                .1
+                .round()
+                .size(),
+        ))
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {

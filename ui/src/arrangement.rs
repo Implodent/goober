@@ -126,7 +126,7 @@ fn spaced_align(
     let mut out = Vec::with_capacity(sizes.len());
 
     for (index, size) in sizes.iter().enumerate() {
-        out[index] = occupied.min(total_size - size);
+        out.insert(index, occupied.min(total_size - size));
         last_space = space_px.min(total_size - out[index] - size);
         occupied = out[index] + size + last_space;
     }
