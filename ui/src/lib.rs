@@ -1,6 +1,9 @@
+pub mod alignment;
+pub mod arrangement;
 pub mod button;
 pub mod modifier;
 mod sk;
+pub mod stacking;
 pub use sk::*;
 pub mod text;
 
@@ -62,6 +65,18 @@ pub struct MeasureContext {
 #[derive(Copy, Clone, Debug)]
 pub struct MeasureResult {
     pub rect: IRect,
+    pub advance_width: i32,
+    pub advance_height: i32,
+}
+
+impl MeasureResult {
+    pub fn new(rect: IRect) -> Self {
+        Self {
+            rect,
+            advance_height: 0,
+            advance_width: 0,
+        }
+    }
 }
 
 pub trait View {
@@ -99,3 +114,39 @@ pub trait Modifier {
         view.render(canvas, how)
     }
 }
+
+pub trait Views {
+    fn iter(&self) -> Box<dyn Iterator<Item = &'_ (dyn View + '_)> + '_>;
+}
+
+impl Views for Vec<Box<dyn View>> {
+    fn iter(&self) -> Box<dyn Iterator<Item = &'_ (dyn View + '_)> + '_> {
+        Box::new(<[Box<dyn View>]>::iter(self.as_ref()).map(|x| x.as_ref()))
+    }
+}
+
+impl<const N: usize> Views for [Box<dyn View>; N] {
+    fn iter(&self) -> Box<dyn Iterator<Item = &'_ (dyn View + '_)> + '_> {
+        Box::new(<[Box<dyn View>]>::iter(self).map(|x| x.as_ref()))
+    }
+}
+
+macro_rules! views_for_tuple {
+    () => {};
+    ($head:ident $($X:ident) *) => {
+        views_for_tuple!($($X)*);
+        views_for_tuple!(~ $head $($X)*);
+    };
+    (~ $Head:ident $($X:ident)*) => {
+        #[allow(non_snake_case)]
+        impl<$Head: View, $($X: View),*> Views for ($Head, $($X,)*) {
+            fn iter(&self) -> Box<dyn Iterator<Item = &'_ (dyn View + '_)> + '_> {
+                let ($Head, $($X,)*) = self;
+
+                Box::new([$Head as &'_ (dyn View + '_), $($X as &'_ (dyn View + '_),)*].into_iter())
+            }
+        }
+    };
+}
+
+views_for_tuple!(A_ B_ C_ D_ E_ F_ G_ H_ I_ J_ K_ L_ M_ N_ O_ P_ Q_ R_ S_ T_ U_ V_ W_ X_ Y_ Z_);
