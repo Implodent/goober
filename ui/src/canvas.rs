@@ -33,3 +33,25 @@ pub fn with_canvas<F: Fn(&Canvas), M: Fn(&MeasureContext) -> IRect>(
 ) -> WithCanvas<F, M> {
     WithCanvas { f, measure }
 }
+
+pub struct Rectangle {
+    rect: IRect,
+    paint: Paint,
+}
+
+impl View for Rectangle {
+    fn render(&self, canvas: &Canvas, how: &RenderContext) {
+        canvas.draw_irect(self.rect.with_offset(how.offset), &self.paint);
+    }
+    fn ev(&self, _event: &Event, _how: &RenderContext) {}
+    fn measure(&self, context: &MeasureContext) -> MeasureResult {
+        MeasureResult::new(self.rect.with_offset(context.offset))
+    }
+}
+
+pub fn rectangle(rect: IRect, paint: impl IntoPaint) -> Rectangle {
+    Rectangle {
+        rect,
+        paint: paint.into_paint(),
+    }
+}

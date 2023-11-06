@@ -1,4 +1,6 @@
-use goober_runtime::{SignalSet, SignalUpdate, WriteSignal};
+use goober_runtime::{
+    create_memo, MaybeSignal, SignalGet, SignalSet, SignalUpdate, SignalWith, WriteSignal,
+};
 
 use super::*;
 
@@ -24,11 +26,17 @@ pub trait ApplyModifier {
     where
         Self: Sized;
 
-    fn background(self, background: impl IntoPaint) -> Applied<Self, Background>
+    fn background<P: IntoPaint + Clone + 'static>(
+        self,
+        background: impl Into<MaybeSignal<P>>,
+    ) -> Applied<Self, Background>
     where
         Self: Sized,
     {
-        self.modifier(Background(background.into_paint()))
+        let sig: MaybeSignal<P> = background.into();
+        self.modifier(Background(
+            create_memo(move |_| sig.get().into_paint()).into(),
+        ))
     }
 
     fn offset(self, offset: impl Into<IPoint>) -> Applied<Self, Offset>
@@ -65,6 +73,13 @@ pub trait ApplyModifier {
     {
         self.modifier(Hovering(write))
     }
+
+    fn align(self, alignment: alignment::Alignment) -> Applied<Self, Align>
+    where
+        Self: Sized,
+    {
+        self.modifier(Align(alignment))
+    }
 }
 
 impl<V: View> ApplyModifier for V {
@@ -80,11 +95,12 @@ impl<V: View> ApplyModifier for V {
 }
 
 #[derive(Debug, Clone)]
-pub struct Background(Paint);
+pub struct Background(MaybeSignal<Paint>);
 
 impl Modifier for Background {
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
-        canvas.draw_irect(view.measure(&(*how).into()).rect, &self.0);
+        self.0
+            .with(|paint| canvas.draw_irect(view.measure(&(*how).into()).rect, paint));
 
         view.render(canvas, how)
     }
@@ -94,6 +110,16 @@ impl Modifier for Background {
 pub struct Offset(IPoint);
 
 impl Modifier for Offset {
+    fn ev(&self, view: &dyn View, event: &Event, how: &RenderContext) {
+        view.ev(
+            event,
+            &RenderContext {
+                offset: how.offset + self.0,
+                constraints: how.constraints,
+                ..*how
+            },
+        )
+    }
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         view.render(
             canvas,
@@ -117,6 +143,28 @@ impl Modifier for Offset {
 pub struct Padding(IRect);
 
 impl Modifier for Padding {
+    fn ev(&self, view: &dyn View, event: &Event, how: &RenderContext) {
+        view.ev(
+            event,
+            &RenderContext {
+                offset: IPoint {
+                    x: how.offset.x + self.0.left(),
+                    y: how.offset.y + self.0.top(),
+                },
+                constraints: Constraints {
+                    min: ISize {
+                        width: how.constraints.min.width - self.0.left(),
+                        height: how.constraints.min.height - self.0.top(),
+                    },
+                    max: ISize {
+                        width: how.constraints.max.width - self.0.right(),
+                        height: how.constraints.max.height - self.0.bottom(),
+                    },
+                },
+                ..*how
+            },
+        )
+    }
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         view.render(
             canvas,
@@ -183,10 +231,8 @@ pub struct OnClick<F>(F);
 impl<F: Fn(MouseButton)> Modifier for OnClick<F> {
     fn ev(&self, view: &dyn View, event: &Event, how: &RenderContext) {
         if let Event::Click(point, button) = event {
-            if view
-                .measure(&(*how).into())
-                .rect
-                .contains(IPoint::from((point.x as i32, point.y as i32)))
+            if dbg!(dbg!(view.measure(&(*how).into()).rect)
+                .contains(IPoint::from((point.x as i32, point.y as i32))))
             {
                 (self.0)(*button);
             }
@@ -215,5 +261,49 @@ impl Modifier for Hovering {
                 })
             }
         }
+    }
+}
+
+pub struct Align(alignment::Alignment);
+
+impl Modifier for Align {
+    fn measure(&self, view: &dyn View, context: &MeasureContext) -> MeasureResult {
+        let mr = view.measure(context);
+
+        let aligned = self.0.align(mr.size(), context.space);
+
+        MeasureResult {
+            rect: mr.rect.with_offset(aligned),
+            ..mr
+        }
+    }
+
+    fn ev(&self, view: &dyn View, event: &Event, how: &RenderContext) {
+        let mr = view.measure(&(*how).into());
+        let aligned = self.0.align(mr.size(), how.space);
+        view.ev(
+            event,
+            &RenderContext {
+                offset: how.offset + aligned,
+                ..*how
+            },
+        )
+    }
+
+    fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
+        let measured = view.measure(&(*how).into());
+        let aligned = self.0.align(measured.size(), how.space);
+
+        view.render(
+            canvas,
+            &RenderContext {
+                offset: how.offset + aligned,
+                space: ISize {
+                    width: how.space.width - aligned.x,
+                    height: how.space.height - aligned.y,
+                },
+                ..*how
+            },
+        )
     }
 }

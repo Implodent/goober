@@ -84,6 +84,13 @@ impl MeasureResult {
             advance_width: 0,
         }
     }
+
+    pub fn size(&self) -> ISize {
+        ISize {
+            width: self.rect.width() + self.advance_width,
+            height: self.rect.height() + self.advance_height,
+        }
+    }
 }
 
 pub trait View {

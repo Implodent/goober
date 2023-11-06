@@ -21,7 +21,44 @@ impl<V, A> StackX<V, A> {
 
 impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
     fn ev(&self, event: &Event, how: &RenderContext) {
-        self.views.iter().for_each(|x| x.ev(event, how));
+        let children = self.views.iter().collect::<Vec<_>>();
+        let _measure = (*how).into();
+        let children_measured = children
+            .iter()
+            .map(|x| x.measure(&_measure))
+            .collect::<Vec<_>>();
+
+        let arranged = self.arrangement.arrange(
+            how.density,
+            how.space.width,
+            children_measured
+                .iter()
+                .map(|x| x.rect.width() + x.advance_width)
+                .collect::<Vec<i32>>(),
+        );
+
+        let aligned = self.alignment.align(
+            children_measured
+                .into_iter()
+                .zip(arranged)
+                .fold(0, |offset, (mr, arranged)| {
+                    offset + mr.rect.width() + mr.advance_width + arranged
+                }),
+            how.space.width,
+        );
+
+        children.iter().for_each(|view| {
+            view.ev(
+                event,
+                &RenderContext {
+                    offset: IPoint {
+                        x: how.offset.x + aligned,
+                        ..how.offset
+                    },
+                    ..*how
+                },
+            )
+        });
     }
 
     fn measure(&self, context: &MeasureContext) -> MeasureResult {
@@ -31,26 +68,28 @@ impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
             .map(|x| x.measure(context))
             .collect::<Vec<_>>();
 
-        MeasureResult::new(
-            children
-                .iter()
-                .zip(
-                    self.arrangement.arrange(
-                        context.density,
-                        context.space.width,
-                        children
-                            .iter()
-                            .map(|x| x.rect.width() + x.advance_width)
-                            .collect::<Vec<i32>>(),
-                    ),
-                )
-                .fold(
-                    IRect::new_empty(),
-                    |rect, (MeasureResult { rect: view, .. }, offset)| {
-                        rect.with_adjustment(view.left, view.top, view.right + offset, view.bottom)
-                    },
+        let rect = children
+            .iter()
+            .zip(
+                self.arrangement.arrange(
+                    context.density,
+                    context.space.width,
+                    children
+                        .iter()
+                        .map(|x| x.rect.width() + x.advance_width)
+                        .collect::<Vec<i32>>(),
                 ),
-        )
+            )
+            .fold(
+                IRect::new_empty(),
+                |rect, (MeasureResult { rect: view, .. }, offset)| {
+                    rect.with_adjustment(view.left, view.top, view.right + offset, view.bottom)
+                },
+            );
+        MeasureResult::new(rect.with_offset(IPoint::new(
+            self.alignment.align(rect.width(), context.space.width),
+            0,
+        )))
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
@@ -122,7 +161,44 @@ impl<V, A> StackY<V, A> {
 
 impl<V: Views, A: arrangement::Vertical> View for StackY<V, A> {
     fn ev(&self, event: &Event, how: &RenderContext) {
-        self.views.iter().for_each(|x| x.ev(event, how));
+        let children = self.views.iter().collect::<Vec<_>>();
+        let _measure = (*how).into();
+        let children_measured = children
+            .iter()
+            .map(|x| x.measure(&_measure))
+            .collect::<Vec<_>>();
+
+        let arranged = self.arrangement.arrange(
+            how.density,
+            how.space.height,
+            children_measured
+                .iter()
+                .map(|x| x.rect.height() + x.advance_height)
+                .collect::<Vec<i32>>(),
+        );
+
+        let aligned = self.alignment.align(
+            children_measured
+                .iter()
+                .zip(arranged.iter())
+                .fold(0, |offset, (mr, arranged)| {
+                    offset + mr.rect.height() + mr.advance_height + arranged
+                }),
+            how.space.height,
+        );
+
+        children.into_iter().for_each(|view| {
+            view.ev(
+                event,
+                &RenderContext {
+                    offset: IPoint {
+                        y: how.offset.y + aligned,
+                        ..how.offset
+                    },
+                    ..*how
+                },
+            )
+        });
     }
 
     fn measure(&self, context: &MeasureContext) -> MeasureResult {
@@ -132,26 +208,29 @@ impl<V: Views, A: arrangement::Vertical> View for StackY<V, A> {
             .map(|x| x.measure(context))
             .collect::<Vec<_>>();
 
-        MeasureResult::new(
-            children
-                .iter()
-                .zip(
-                    self.arrangement.arrange(
-                        context.density,
-                        context.space.height,
-                        children
-                            .iter()
-                            .map(|x| x.rect.height() + x.advance_height)
-                            .collect::<Vec<i32>>(),
-                    ),
-                )
-                .fold(
-                    IRect::new_empty(),
-                    |rect, (MeasureResult { rect: view, .. }, offset)| {
-                        rect.with_adjustment(view.left, view.top, view.right + offset, view.bottom)
-                    },
+        let rect = children
+            .iter()
+            .zip(
+                self.arrangement.arrange(
+                    context.density,
+                    context.space.height,
+                    children
+                        .iter()
+                        .map(|x| x.rect.height() + x.advance_height)
+                        .collect::<Vec<i32>>(),
                 ),
-        )
+            )
+            .fold(
+                IRect::new_empty(),
+                |rect, (MeasureResult { rect: view, .. }, offset)| {
+                    rect.with_adjustment(view.left, view.top, view.right, view.bottom + offset)
+                },
+            );
+
+        MeasureResult::new(rect.with_offset(IPoint::new(
+            0,
+            self.alignment.align(rect.height(), context.space.height),
+        )))
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
