@@ -1,5 +1,4 @@
 use goober::prelude::*;
-use goober_ui::{skia_safe::IRect, IntoPaint};
 
 fn main() -> Result<(), LaunchError> {
     launch(app)
@@ -20,12 +19,7 @@ fn multi_stack() -> impl View {
 fn rect(color: Color) -> impl View {
     let rect = IRect::from_ltrb(100, 100, 100, 100);
 
-    with_canvas(
-        move |canvas| {
-            canvas.draw_irect(rect, &color.into_paint());
-        },
-        move |_| rect,
-    )
+    rectangle(rect, color)
 }
 
 fn app() -> impl View {

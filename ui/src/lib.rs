@@ -101,6 +101,7 @@ pub trait View {
     /// Render this view, with the provided canvas, and provided render context.
     fn render(&self, canvas: &Canvas, how: &RenderContext);
     #[doc(hidden)]
+    #[inline(always)]
     /// Handle an event.
     /// If your component has children, be sure to forward that event to them, unless it is not desired.
     fn ev(&self, _event: &Event, _how: &RenderContext) {}
@@ -108,12 +109,14 @@ pub trait View {
 
 pub trait Modifier {
     #[doc(hidden)]
+    #[inline(always)]
     /// Intercept measuring said `view`.
     /// The default implementation doesn't modify the measurement result from the `view` and just returns it as-is.
     fn measure(&self, view: &dyn View, context: &MeasureContext) -> MeasureResult {
         view.measure(context)
     }
     #[doc(hidden)]
+    #[inline(always)]
     /// Intercept an event. This function is called when the view (with an applied modifier) receives an event.
     /// Be sure to let the view know about the event too, unless it is not desired.
     /// The default implementation just forwards the event to the view.
@@ -124,6 +127,7 @@ pub trait Modifier {
     /// Usually, with modifiers that do not need very precise control over the rendering could just do their thing and let the view render the rest.
     /// For those who need precise control, however, creating a Canvas is always feasible. You create one, let the view draw on it, and do your magical modifier things.
     #[doc(hidden)]
+    #[inline(always)]
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         view.render(canvas, how)
     }
