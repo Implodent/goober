@@ -27,7 +27,7 @@
           SKIA_GN_COMMAND = "${pkgs.gn}/bin/gn";
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang}/lib/libclang.so";
           # nativeBuildInputs = with pkgs; [ rustc cargo ];
-          nativeBuildInputs = with pkgs; [ wayland ninja fontconfig libiconv clang ];
+          nativeBuildInputs = with pkgs; [ wayland ninja fontconfig libiconv clang pkg-config ];
           buildInputs = with pkgs; [ fontconfig freetype wayland libxkbcommon libGL xorg.libX11 xorg.libXcursor xorg.libXrandr xorg.libXi openssl gn ];
           shellHook = ''
             export CC="${pkgs.clang}/bin/clang"

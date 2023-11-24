@@ -1,3 +1,7 @@
+use std::ops::Add;
+
+use taffy::{prelude::*, axis::AbsoluteAxis};
+pub type Point<T = f32> = taffy::geometry::Point<T>;
 pub mod alignment;
 pub mod arrangement;
 pub mod button;
@@ -9,31 +13,130 @@ pub use sk::*;
 pub mod text;
 
 pub use skia_safe;
-use skia_safe::{Canvas, Contains, Font, IPoint, IRect, ISize, Paint, Point};
+use skia_safe::{Canvas, Contains, Font, IRect, ISize, Paint};
 
-#[derive(Copy, Clone, Debug)]
-pub struct RenderContext {
-    pub offset: IPoint,
-    pub constraints: Constraints,
-    pub space: ISize,
-    pub density: Density,
+pub trait Apply {
+    fn apply(self, applicant: impl FnOnce(&Self)) -> Self;
+    fn apply_mut(self, applicant: impl FnOnce(&mut Self)) -> Self;
 }
 
-impl Into<MeasureContext> for RenderContext {
-    fn into(self) -> MeasureContext {
-        MeasureContext {
-            offset: self.offset,
-            constraints: self.constraints,
-            space: self.space,
-            density: self.density,
+impl<T> Apply for T {
+    fn apply(self, applicant: impl FnOnce(&Self)) -> Self {
+        applicant(&self);
+        self
+    }
+    fn apply_mut(mut self, applicant: impl FnOnce(&mut Self)) -> Self {
+        applicant(&mut self);
+        self
+    }
+}
+
+#[doc(hidden)]
+pub trait Tf: Sized {
+    type Sk;
+
+    fn from_sk(sk: Self::Sk) -> Self;
+    fn into_sk(self) -> Self::Sk;
+    fn into_sk_dp(self, _density: Density) -> Self::Sk { self.into_sk() }
+}
+
+impl Tf for taffy::geometry::Point<f32> {
+    type Sk = skia_safe::Point;
+
+    fn from_sk(sk: skia_safe::Point) -> Self {
+        Self { x: sk.x, y: sk.y }
+    }
+
+    fn into_sk(self) -> skia_safe::Point {
+        skia_safe::Point {
+            x: self.x,
+            y: self.y,
         }
     }
+
+    fn into_sk_dp(self, density: Density) -> Self::Sk {
+        skia_safe::Point {
+            x: density.pixels(Dp(self.x)),
+            y: density.pixels(Dp(self.y)),
+        }
+    }
+}
+
+impl Tf for taffy::geometry::Size<f32> {
+    type Sk = skia_safe::Size;
+    fn from_sk(sk: Self::Sk) -> Self {
+        Self {
+            width: sk.width,
+            height: sk.height,
+        }
+    }
+    fn into_sk(self) -> Self::Sk {
+        skia_safe::Size {
+            width: self.width,
+            height: self.height,
+        }
+    }
+    fn into_sk_dp(self, density: Density) -> Self::Sk {
+        skia_safe::Size {
+            width: density.pixels(Dp(self.width)),
+            height: density.pixels(Dp(self.height)),
+        }
+    }
+}
+
+impl Tf for taffy::geometry::Rect<f32> {
+    type Sk = skia_safe::Rect;
+    fn from_sk(sk: Self::Sk) -> Self {
+        Self {
+            left: sk.left,
+            top: sk.top,
+            right: sk.right,
+            bottom: sk.bottom,
+        }
+    }
+    fn into_sk(self) -> Self::Sk {
+        skia_safe::Rect {
+            left: self.left,
+            top: self.top,
+            right: self.right,
+            bottom: self.bottom,
+        }
+    }
+    fn into_sk_dp(self, density: Density) -> Self::Sk {
+        skia_safe::Rect {
+            left: density.pixels(Dp(self.left)),
+            top: density.pixels(Dp(self.top)),
+            right: density.pixels(Dp(self.right)),
+            bottom: density.pixels(Dp(self.bottom)),
+        }
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct RenderContext<'a> {
+    pub density: Density,
+    pub layout: Layout,
+    pub taffy: &'a Taffy,
+    pub this_node: Node
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum Event {
     Click(Point, MouseButton),
     CursorMove(Point),
+}
+
+pub fn taffy_rect<T: Add<T, Output = T> + Copy>(size: Size<T>, point: Point<T>) -> Rect<T> {
+    Rect {
+        left: point.x,
+        right: point.x + size.width,
+        top: point.y + size.height,
+        bottom: point.y,
+    }
+}
+
+pub fn taffy_rect_contains<T: PartialOrd<T> + Copy>(rect: &Rect<T>, point: &Point<T>) -> bool {
+    (rect.left..rect.right).contains(&point.x) && (rect.top..rect.bottom).contains(&point.y)
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -46,57 +149,21 @@ pub enum MouseButton {
     Other(u16),
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct Constraints {
-    pub min: ISize,
-    pub max: ISize,
-}
-
-impl Constraints {
-    pub fn clamp(&self, size: ISize) -> ISize {
-        ISize {
-            width: size.width.clamp(self.min.width, self.max.width),
-            height: size.height.clamp(self.min.height, self.max.height),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct MeasureContext {
-    pub offset: IPoint,
-    pub constraints: Constraints,
-    pub space: ISize,
-    pub density: Density,
-}
-
-#[derive(Copy, Clone, Debug)]
-pub struct MeasureResult {
-    pub rect: IRect,
-    pub advance_width: i32,
-    pub advance_height: i32,
-}
-
-impl MeasureResult {
-    pub fn new(rect: IRect) -> Self {
-        Self {
-            rect,
-            advance_height: 0,
-            advance_width: 0,
-        }
-    }
-
-    pub fn size(&self) -> ISize {
-        ISize {
-            width: self.rect.width() + self.advance_width,
-            height: self.rect.height() + self.advance_height,
-        }
-    }
-}
-
 pub trait View {
     #[doc(hidden)]
-    /// Measure this view.
-    fn measure(&self, context: &MeasureContext) -> MeasureResult;
+    fn style(&self) -> Style;
+    #[doc(hidden)]
+    /// Measure this view and its children (if available).
+    /// A current node ID is optionally provided, together with a mutable reference to the Taffy
+    /// tree.
+    fn measure(&self, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
+        if let Some(current_node) = current_node {
+            taffy.set_style(current_node, self.style()).unwrap();
+            current_node
+        } else {
+            taffy.new_leaf(self.style()).unwrap()
+        }
+    }
     #[doc(hidden)]
     /// Render this view, with the provided canvas, and provided render context.
     fn render(&self, canvas: &Canvas, how: &RenderContext);
@@ -110,10 +177,19 @@ pub trait View {
 pub trait Modifier {
     #[doc(hidden)]
     #[inline(always)]
+    /// Intercept styling said `view`.
+    fn style(&self, view: &dyn View) -> Style {
+        Style::DEFAULT
+    }
+    #[doc(hidden)]
+    #[inline(always)]
     /// Intercept measuring said `view`.
-    /// The default implementation doesn't modify the measurement result from the `view` and just returns it as-is.
-    fn measure(&self, view: &dyn View, context: &MeasureContext) -> MeasureResult {
-        view.measure(context)
+    fn measure(&self, view: &dyn View, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
+        let node = view.measure(current_node, taffy);
+
+        taffy.set_style(node, self.style(view)).unwrap();
+
+        node
     }
     #[doc(hidden)]
     #[inline(always)]
@@ -125,7 +201,8 @@ pub trait Modifier {
     }
     /// Modify the rendering of the view.
     /// Usually, with modifiers that do not need very precise control over the rendering could just do their thing and let the view render the rest.
-    /// For those who need precise control, however, creating a Canvas is always feasible. You create one, let the view draw on it, and do your magical modifier things.
+    /// For those who need precise control, however, creating a Canvas is always feasible.
+    /// You create one, let the view draw on it, and do your magical modifier things.
     #[doc(hidden)]
     #[inline(always)]
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
@@ -190,7 +267,8 @@ impl Density {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+use derive_more::*;
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Mul, Div, Default)]
 pub struct Dp(pub f32);
 
 impl Dp {

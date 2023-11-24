@@ -15,16 +15,14 @@ fn card(bg: Color, name: &'static str) -> impl View {
     text(name)
         .font_size(50.0)
         .on_click(move |_| set_active.update(|x| *x = !*x))
-        .padding(30)
         .background::<Color>(create_memo(
             move |_| if active.get() { Color::GRAY } else { bg },
         ))
-        .align(Alignment::CENTER)
 }
 
 fn bingo_app() -> impl View {
     stack_y((
-        stack_x((card(Color::RED, "j"), card(Color::GREEN, "z"))),
-        stack_x((card(Color::BLUE, "x"), card(Color::MAGENTA, "n"))),
-    ))
+        stack_x((card(Color::RED, "j"), card(Color::GREEN, "z"))).align(alignment::Horizontal::Start),
+        stack_x((card(Color::BLUE, "x"), card(Color::MAGENTA, "n"))).align(alignment::Horizontal::End),
+    )).align(alignment::Vertical::Top)
 }

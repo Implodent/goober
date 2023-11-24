@@ -800,6 +800,15 @@ where
     pub fn derive(derived_signal: impl Fn() -> T + 'static) -> Self {
         Self::Dynamic(Signal::derive(derived_signal))
     }
+
+    /// Maps a signal. If this is a static value, just applies the mapper to the value. If this is
+    /// a dynamic value (a signal), derives another signal, mapping the signal using the mapper.
+    pub fn map<U: 'static>(self, mapper: impl Fn(T) -> U + 'static) -> MaybeSignal<U> where T: Clone {
+        match self {
+            Self::Static(val) => MaybeSignal::Static(mapper(val)),
+            Self::Dynamic(dynamic) => MaybeSignal::derive(move || mapper(dynamic.get()))
+        }
+    }
 }
 
 impl<T> From<T> for MaybeSignal<T> {

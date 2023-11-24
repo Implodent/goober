@@ -4,6 +4,8 @@ resolver = "2"
 
 [workspace.dependencies]
 tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "sync", "time"] }
+taffy = "0.3.18"
+derive_more = "0.99.17"
 
 [workspace.package]
 version = "0.1.0"

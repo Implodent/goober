@@ -1,15 +1,17 @@
 use super::*;
 
+type Dp = LengthPercentage;
+
 pub trait Horizontal {
     fn spacing(&self) -> Dp;
 
-    fn arrange(&self, density: Density, total_size: i32, sizes: Vec<i32>) -> Vec<i32>;
+    fn justify(&self) -> JustifyItems;
 }
 
 pub trait Vertical {
     fn spacing(&self) -> Dp;
 
-    fn arrange(&self, density: Density, total_size: i32, sizes: Vec<i32>) -> Vec<i32>;
+    fn align(&self) -> AlignItems;
 }
 
 pub trait Arrangement: Vertical + Horizontal {}
@@ -30,7 +32,7 @@ pub enum BuiltinVertical {
     Center,
     Bottom,
     SpacedBy(Dp),
-    SpacedAligned(Dp, alignment::Horizontal),
+    SpacedAligned(Dp, alignment::Vertical),
     Aligned(alignment::Vertical),
 }
 
@@ -50,27 +52,13 @@ impl Horizontal for BuiltinHorizontal {
             _ => Dp::ZERO,
         }
     }
-
-    fn arrange(&self, density: Density, total_size: i32, sizes: Vec<i32>) -> Vec<i32> {
+    fn justify(&self) -> JustifyItems {
         match *self {
-            Self::Start => place_left_or_top(sizes),
-            Self::Center => place_center(total_size, sizes),
-            Self::End => place_right_or_bottom(total_size, sizes),
-            Self::SpacedBy(space) => spaced_align(space, None, density, total_size, sizes),
-            Self::SpacedAligned(space, alignment) => spaced_align(
-                space,
-                Some(Box::new(move |space| alignment.align(0, space))),
-                density,
-                total_size,
-                sizes,
-            ),
-            Self::Aligned(alignment) => spaced_align(
-                0.dp(),
-                Some(Box::new(move |space| alignment.align(0, space))),
-                density,
-                total_size,
-                sizes,
-            ),
+            Self::Aligned(align) | Self::SpacedAligned(_, align) => align.into(),
+            Self::Start => JustifyItems::Start,
+            Self::Center => JustifyItems::Center,
+            Self::End => JustifyItems::End,
+            Self::SpacedBy(_) => JustifyItems::Start,
         }
     }
 }
@@ -83,102 +71,13 @@ impl Vertical for BuiltinVertical {
         }
     }
 
-    fn arrange(&self, density: Density, total_size: i32, sizes: Vec<i32>) -> Vec<i32> {
+    fn align(&self) -> AlignItems {
         match *self {
-            Self::Top => place_left_or_top(sizes),
-            Self::Center => place_center(total_size, sizes),
-            Self::Bottom => place_right_or_bottom(total_size, sizes),
-            Self::SpacedBy(space) => spaced_align(space, None, density, total_size, sizes),
-            Self::SpacedAligned(space, alignment) => spaced_align(
-                space,
-                Some(Box::new(move |space| alignment.align(0, space))),
-                density,
-                total_size,
-                sizes,
-            ),
-            Self::Aligned(alignment) => spaced_align(
-                0.dp(),
-                Some(Box::new(move |space| alignment.align(0, space))),
-                density,
-                total_size,
-                sizes,
-            ),
+            Self::Aligned(align) | Self::SpacedAligned(_, align) => align.into(),
+            Self::Top => AlignItems::Start,
+            Self::Center => AlignItems::Center,
+            Self::Bottom => AlignItems::End,
+            Self::SpacedBy(_) => AlignItems::Start,
         }
     }
-}
-
-fn spaced_align(
-    space: Dp,
-    alignment: Option<Box<dyn FnOnce(i32) -> i32>>,
-    density: Density,
-    total_size: i32,
-    sizes: Vec<i32>,
-) -> Vec<i32> {
-    if sizes.is_empty() {
-        return sizes;
-    }
-
-    let space_px = density.round_to_pixels(space);
-
-    let mut occupied = 0;
-    let mut last_space = 0;
-
-    let mut out = Vec::with_capacity(sizes.len());
-
-    for (index, size) in sizes.iter().enumerate() {
-        out.insert(index, occupied.min(total_size - size));
-        last_space = space_px.min(total_size - out[index] - size);
-        occupied = out[index] + size + last_space;
-    }
-
-    occupied -= last_space;
-
-    if let Some(alignment) = alignment.filter(|_| occupied < total_size) {
-        let group_position = alignment(total_size - occupied);
-
-        out.iter_mut().for_each(|x| *x += group_position);
-    }
-
-    out
-}
-
-fn place_left_or_top(sizes: Vec<i32>) -> Vec<i32> {
-    let mut current = 0;
-
-    sizes
-        .into_iter()
-        .map(|size| {
-            let ret = current;
-            current += size;
-            ret
-        })
-        .collect()
-}
-
-fn place_center(total_size: i32, sizes: Vec<i32>) -> Vec<i32> {
-    let consumed_size = sizes.iter().sum::<i32>();
-    let mut current = (total_size - consumed_size) as f32 / 2f32;
-
-    sizes
-        .into_iter()
-        .map(|size| {
-            let ret = current.round() as i32;
-            current += size as f32;
-            ret
-        })
-        .collect()
-}
-
-fn place_right_or_bottom(total_size: i32, sizes: Vec<i32>) -> Vec<i32> {
-    let consumed_size = sizes.iter().sum::<i32>();
-    let mut current = total_size - consumed_size;
-
-    sizes
-        .into_iter()
-        .map(|size| {
-            let ret = current;
-            current += size;
-            ret
-        })
-        .collect()
 }

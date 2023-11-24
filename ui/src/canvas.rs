@@ -1,25 +1,17 @@
-use skia_safe::Matrix;
-
 use super::*;
 
-pub struct WithCanvas<F, M> {
+pub struct WithCanvas<F> {
     f: F,
-    measure: M,
+    style: Style,
 }
 
-impl<F: Fn(&Canvas), M: Fn(&MeasureContext) -> IRect> View for WithCanvas<F, M> {
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        MeasureResult::new((self.measure)(context))
+impl<F: Fn(&Canvas)> View for WithCanvas<F> {
+    fn style(&self) -> Style {
+        self.style.clone()
     }
-
-    fn ev(&self, _event: &Event, _how: &RenderContext) {}
-
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
         canvas.save();
-        canvas.concat(&Matrix::translate((
-            how.offset.x as f32,
-            how.offset.y as f32,
-        )));
+        canvas.translate(how.layout.location.into_sk());
 
         (self.f)(canvas);
 
@@ -27,31 +19,34 @@ impl<F: Fn(&Canvas), M: Fn(&MeasureContext) -> IRect> View for WithCanvas<F, M> 
     }
 }
 
-pub fn with_canvas<F: Fn(&Canvas), M: Fn(&MeasureContext) -> IRect>(
-    f: F,
-    measure: M,
-) -> WithCanvas<F, M> {
-    WithCanvas { f, measure }
+pub fn with_canvas<F: Fn(&Canvas)>(f: F, style: Style) -> WithCanvas<F> {
+    WithCanvas { f, style }
 }
 
 pub struct Rectangle {
-    rect: IRect,
+    rect: Rect<Dp>,
     paint: Paint,
 }
 
 impl View for Rectangle {
-    fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        canvas.draw_irect(self.rect.with_offset(how.offset), &self.paint);
+    fn style(&self) -> Style {
+        Style {
+            size: Size {
+                width: Dimension::Points(self.rect.grid_axis_sum(AbsoluteAxis::Horizontal).0),
+                height: Dimension::Points(self.rect.grid_axis_sum(AbsoluteAxis::Vertical).0),
+            },
+            ..Default::default()
+        }
     }
-    fn ev(&self, _event: &Event, _how: &RenderContext) {}
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        MeasureResult::new(self.rect.with_offset(context.offset))
+
+    fn render(&self, canvas: &Canvas, how: &RenderContext) {
+        canvas.draw_rect(self.rect.map(|x| how.density.pixels(x)).into_sk(), &self.paint);
     }
 }
 
-pub fn rectangle(rect: IRect, paint: impl IntoPaint) -> Rectangle {
+pub fn rectangle(rect: impl IntoRect<Dp>, paint: impl IntoPaint) -> Rectangle {
     Rectangle {
-        rect,
+        rect: rect.into_rect(),
         paint: paint.into_paint(),
     }
 }

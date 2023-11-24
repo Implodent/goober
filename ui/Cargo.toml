@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 skia-safe = { version = "0.67.0", features = [ "gl", "textlayout", "svg" ] }
 goober-runtime.path = "../runtime"
+taffy.workspace = true
+derive_more.workspace = true

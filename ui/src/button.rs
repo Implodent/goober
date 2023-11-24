@@ -15,11 +15,10 @@ impl<C: View, H: Fn(Point, MouseButton)> View for Button<C, H> {
     fn ev(&self, event: &Event, how: &RenderContext) {
         match event {
             Event::Click(click, button)
-                if self
-                    .child
-                    .measure(&(*how).into())
-                    .rect
-                    .contains(IPoint::from((click.x as i32, click.y as i32))) =>
+                if taffy_rect_contains(
+                    &taffy_rect(how.layout.size, how.layout.location),
+                    &click,
+                ) =>
             {
                 (self.on_click)(*click, *button)
             }
@@ -29,8 +28,8 @@ impl<C: View, H: Fn(Point, MouseButton)> View for Button<C, H> {
         self.child.ev(&event, how)
     }
 
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        self.child.measure(context)
+    fn style(&self) -> Style {
+        self.child.style()
     }
 }
 

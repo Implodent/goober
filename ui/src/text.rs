@@ -1,88 +1,103 @@
-use goober_runtime::Oco;
+use goober_runtime::{MaybeSignal, Oco, SignalGet, SignalWith};
 use skia_safe::{Color, Color4f};
 
 use super::*;
 
-pub struct Text<F> {
-    pub text: F,
-    pub font: Font,
-    pub paint: Paint,
+pub struct Text {
+    pub text: MaybeSignal<Oco<'static, str>>,
+    pub font: MaybeSignal<Font>,
+    pub paint: MaybeSignal<Paint>,
 }
 
-impl<F> Text<F> {
-    pub fn font(self, font: impl Into<Font>) -> Self {
+impl Text {
+    pub fn font(self, font: impl Into<MaybeSignal<Font>>) -> Self {
         Self {
             font: font.into(),
             ..self
         }
     }
 
-    pub fn font_size(self, size: f32) -> Self {
+    pub fn font_size(self, size: impl Into<MaybeSignal<f32>>) -> Self {
+        let size: MaybeSignal<f32> = size.into();
         Self {
-            font: self
-                .font
-                .with_size(size)
-                .expect("font wasn't able to scale up"),
+            font: MaybeSignal::derive(move || {
+                self.font
+                    .get()
+                    .with_size(size.get())
+                    .expect("font wasn't able to scale up")
+            }),
             ..self
         }
     }
 
-    pub fn paint(self, paint: impl IntoPaint) -> Self {
+    pub fn paint<P: IntoPaint + Clone + 'static>(self, paint: impl Into<MaybeSignal<P>>) -> Self {
+        let paint: MaybeSignal<P> = paint.into();
         Self {
-            paint: paint.into_paint(),
+            paint: paint.map(IntoPaint::into_paint),
             ..self
         }
     }
 }
 
-impl<F: StrFn<'static>> View for Text<F> {
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        MeasureResult::new(IRect::from_pt_size(
-            context.offset,
-            self.font
-                .measure_str(self.text.oco().as_str(), Some(&self.paint))
-                .1
-                .round()
-                .size(),
-        ))
+impl View for Text {
+    fn style(&self) -> Style {
+        Style {
+            size: self.text.with(|text| {
+                self.font.with(|font| {
+                    self.paint.with(|paint| {
+                        Size::from_sk(font.measure_str(text.as_str(), Some(paint)).1.size()).map(Dimension::Points)
+                    })
+                })
+            }),
+            ..Default::default()
+        }
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        let text = self.text.oco();
-        let bounds = self.measure(&(*how).into()).rect;
-
-        canvas.draw_str(
-            text.as_str(),
-            IPoint {
-                x: how.offset.x,
-                y: how.offset.y + bounds.height().abs(),
-            },
-            &self.font,
-            &self.paint,
-        );
+        self.text.with(|text| {
+            self.font.with(|font| {
+                self.paint.with(|paint| {
+                    canvas.draw_str(
+                        text.as_str(),
+                        Point {
+                            x: how.layout.location.x,
+                            y: how.layout.location.y,
+                        }.into_sk(),
+                        font,
+                        paint,
+                    )
+                })
+            });
+        })
     }
 }
 
 pub trait StrFn<'a> {
-    fn oco(&self) -> Oco<'a, str>;
+    fn sig(self) -> MaybeSignal<Oco<'a, str>>;
 }
 
 impl<'a> StrFn<'a> for &'a str {
-    fn oco(&self) -> Oco<'a, str> {
-        Oco::Borrowed(*self)
+    fn sig(self) -> MaybeSignal<Oco<'a, str>> {
+        MaybeSignal::Static(Oco::Borrowed(self))
     }
 }
 
-impl<'a, F: Fn() -> O, O: Into<Oco<'a, str>>> StrFn<'a> for F {
-    fn oco(&self) -> Oco<'a, str> {
-        (self)().into()
+impl<'a> StrFn<'a> for String {
+    fn sig(self) -> MaybeSignal<Oco<'a, str>> {
+        MaybeSignal::Static(Oco::Owned(self))
     }
 }
 
-pub fn text<F: StrFn<'static>>(text: F) -> Text<F> {
+impl<'a, F: Fn() -> Oco<'a, str> + 'static> StrFn<'a> for F {
+    fn sig(self) -> MaybeSignal<Oco<'a, str>> {
+        MaybeSignal::derive(self)
+    }
+}
+
+pub fn text(text: impl StrFn<'static>) -> Text {
     Text {
-        text,
-        font: Font::default(),
-        paint: Paint::new(Color4f::from(Color::BLACK), None),
+        text: text.sig(),
+        font: MaybeSignal::Static(Font::default()),
+        paint: MaybeSignal::Static(Paint::new(Color4f::from(Color::BLACK), None)),
     }
 }

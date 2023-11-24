@@ -20,115 +20,64 @@ impl<V, A> StackX<V, A> {
 }
 
 impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
+    fn style(&self) -> Style {
+        Style {
+            justify_items: Some(self.arrangement.justify()),
+            gap: Size {
+                width: self.arrangement.spacing(),
+                height: TaffyZero::ZERO,
+            },
+            flex_direction: FlexDirection::Row,
+            ..Default::default()
+        }
+    }
+
+    fn measure(&self, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
+        if let Some(current_node) = current_node {
+            // clueless
+            taffy.set_style(current_node, self.style()).unwrap();
+
+            current_node
+        } else {
+            taffy
+                .new_with_children(
+                    self.style(),
+                    &self
+                        .views
+                        .iter()
+                        .map(|child| child.measure(None, taffy))
+                        .collect::<Vec<_>>(),
+                )
+                .unwrap()
+        }
+    }
+
     fn ev(&self, event: &Event, how: &RenderContext) {
-        let children = self.views.iter().collect::<Vec<_>>();
-        let _measure = (*how).into();
-        let children_measured = children
-            .iter()
-            .map(|x| x.measure(&_measure))
-            .collect::<Vec<_>>();
-
-        let arranged = self.arrangement.arrange(
-            how.density,
-            how.space.width,
-            children_measured
-                .iter()
-                .map(|x| x.rect.width() + x.advance_width)
-                .collect::<Vec<i32>>(),
-        );
-
-        let aligned = self.alignment.align(
-            children_measured
-                .into_iter()
-                .zip(arranged)
-                .fold(0, |offset, (mr, arranged)| {
-                    offset + mr.rect.width() + mr.advance_width + arranged
-                }),
-            how.space.width,
-        );
-
-        children.iter().for_each(|view| {
+        self.views.iter().enumerate().for_each(|(index, view)| {
+            let child_node = how.taffy.child(how.this_node, index);
             view.ev(
                 event,
                 &RenderContext {
-                    offset: IPoint {
-                        x: how.offset.x + aligned,
-                        ..how.offset
-                    },
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
                     ..*how
                 },
             )
         });
     }
 
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        let children = self
-            .views
-            .iter()
-            .map(|x| x.measure(context))
-            .collect::<Vec<_>>();
-
-        let rect = children
-            .iter()
-            .zip(
-                self.arrangement.arrange(
-                    context.density,
-                    context.space.width,
-                    children
-                        .iter()
-                        .map(|x| x.rect.width() + x.advance_width)
-                        .collect::<Vec<i32>>(),
-                ),
-            )
-            .fold(
-                IRect::new_empty(),
-                |rect, (MeasureResult { rect: view, .. }, offset)| {
-                    rect.with_adjustment(view.left, view.top, view.right + offset, view.bottom)
-                },
-            );
-        MeasureResult::new(rect.with_offset(IPoint::new(
-            self.alignment.align(rect.width(), context.space.width),
-            0,
-        )))
-    }
-
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        let children = self.views.iter().collect::<Vec<_>>();
-        let _measure = (*how).into();
-        let children_measured = children
-            .iter()
-            .map(|x| x.measure(&_measure))
-            .collect::<Vec<_>>();
-
-        let offsets = self.arrangement.arrange(
-            how.density,
-            how.space.width,
-            children_measured
-                .iter()
-                .map(|x| x.rect.width() + x.advance_width)
-                .collect::<Vec<i32>>(),
-        );
-
-        let aligned = self.alignment.align(
-            children_measured
-                .iter()
-                .zip(offsets.iter())
-                .fold(0, |size, (mr, arranged)| mr.rect.width() + arranged + size),
-            how.space.width,
-        );
-
-        for (view, offset) in children.into_iter().zip(offsets) {
+        self.views.iter().enumerate().for_each(|(index, view)| {
+            let child_node = how.taffy.child(how.this_node, index);
             view.render(
                 canvas,
                 &RenderContext {
-                    offset: IPoint {
-                        x: how.offset.x + offset + aligned,
-                        ..how.offset
-                    },
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
                     ..*how
                 },
-            );
-        }
+            )
+        })
     }
 }
 
@@ -160,116 +109,66 @@ impl<V, A> StackY<V, A> {
 }
 
 impl<V: Views, A: arrangement::Vertical> View for StackY<V, A> {
+    fn style(&self) -> Style {
+        Style {
+            flex_direction: FlexDirection::Column,
+            justify_items: Some(self.arrangement.align()),
+            gap: Size {
+                height: self.arrangement.spacing(),
+                width: TaffyZero::ZERO,
+            },
+            ..Default::default()
+        }
+    }
+
+    fn measure(&self, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
+        if let Some(current_node) = current_node {
+            // clueless
+            taffy.set_style(current_node, self.style()).unwrap();
+
+            current_node
+        } else {
+            let mut taffies = vec![];
+
+            for child in self.views.iter() {
+                taffies.push(child.measure(None, taffy));
+            }
+
+            taffy
+                .new_with_children(
+                    self.style(),
+                    &taffies,
+                )
+                .unwrap()
+        }
+    }
+
     fn ev(&self, event: &Event, how: &RenderContext) {
-        let children = self.views.iter().collect::<Vec<_>>();
-        let _measure = (*how).into();
-        let children_measured = children
-            .iter()
-            .map(|x| x.measure(&_measure))
-            .collect::<Vec<_>>();
-
-        let arranged = self.arrangement.arrange(
-            how.density,
-            how.space.height,
-            children_measured
-                .iter()
-                .map(|x| x.rect.height() + x.advance_height)
-                .collect::<Vec<i32>>(),
-        );
-
-        let aligned = self.alignment.align(
-            children_measured
-                .iter()
-                .zip(arranged.iter())
-                .fold(0, |offset, (mr, arranged)| {
-                    offset + mr.rect.height() + mr.advance_height + arranged
-                }),
-            how.space.height,
-        );
-
-        children.into_iter().for_each(|view| {
+        self.views.iter().enumerate().for_each(|(index, view)| {
+            let child_node = how.taffy.child(how.this_node, index);
             view.ev(
                 event,
                 &RenderContext {
-                    offset: IPoint {
-                        y: how.offset.y + aligned,
-                        ..how.offset
-                    },
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
                     ..*how
                 },
             )
         });
     }
 
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        let children = self
-            .views
-            .iter()
-            .map(|x| x.measure(context))
-            .collect::<Vec<_>>();
-
-        let rect = children
-            .iter()
-            .zip(
-                self.arrangement.arrange(
-                    context.density,
-                    context.space.height,
-                    children
-                        .iter()
-                        .map(|x| x.rect.height() + x.advance_height)
-                        .collect::<Vec<i32>>(),
-                ),
-            )
-            .fold(
-                IRect::new_empty(),
-                |rect, (MeasureResult { rect: view, .. }, offset)| {
-                    rect.with_adjustment(view.left, view.top, view.right, view.bottom + offset)
-                },
-            );
-
-        MeasureResult::new(rect.with_offset(IPoint::new(
-            0,
-            self.alignment.align(rect.height(), context.space.height),
-        )))
-    }
-
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        let children = self.views.iter().collect::<Vec<_>>();
-        let _measure = (*how).into();
-        let children_measured = children
-            .iter()
-            .map(|x| x.measure(&_measure))
-            .collect::<Vec<_>>();
-
-        let offsets = self.arrangement.arrange(
-            how.density,
-            how.space.height,
-            children_measured
-                .iter()
-                .map(|x| x.rect.height() + x.advance_height)
-                .collect::<Vec<i32>>(),
-        );
-
-        let aligned = self.alignment.align(
-            children_measured
-                .iter()
-                .zip(offsets.iter())
-                .fold(0, |size, (mr, arranged)| mr.rect.height() + arranged + size),
-            how.space.height,
-        );
-
-        for (view, offset) in children.into_iter().zip(offsets) {
+        self.views.iter().enumerate().for_each(|(index, view)| {
+            let child_node = how.taffy.child(how.this_node, index);
             view.render(
                 canvas,
                 &RenderContext {
-                    offset: IPoint {
-                        y: how.offset.y + offset + aligned,
-                        ..how.offset
-                    },
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
                     ..*how
                 },
-            );
-        }
+            )
+        })
     }
 }
 
@@ -279,40 +178,4 @@ pub fn stack_y<V: Views>(views: V) -> StackY<V, arrangement::BuiltinVertical> {
         arrangement: arrangement::BuiltinVertical::Top,
         alignment: alignment::Vertical::Top,
     }
-}
-
-pub struct StackZ<V> {
-    views: V,
-}
-
-impl<V: Views> View for StackZ<V> {
-    fn ev(&self, event: &Event, how: &RenderContext) {
-        self.views.iter().for_each(|x| x.ev(event, how));
-    }
-    fn measure(&self, context: &MeasureContext) -> MeasureResult {
-        self.views
-            .iter()
-            .fold(MeasureResult::new(IRect::new_empty()), |mr, view| {
-                let measured = view.measure(context);
-                MeasureResult {
-                    rect: IRect {
-                        left: mr.rect.left.max(measured.rect.left),
-                        top: mr.rect.left.max(measured.rect.left),
-                        right: mr.rect.left.max(measured.rect.left),
-                        bottom: mr.rect.left.max(measured.rect.left),
-                    },
-                    advance_width: mr.advance_width.max(measured.advance_width),
-                    advance_height: mr.advance_height.max(measured.advance_height),
-                }
-            })
-    }
-    fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        for view in self.views.iter() {
-            view.render(canvas, how);
-        }
-    }
-}
-
-pub fn stack_z<V: Views>(views: V) -> StackZ<V> {
-    StackZ { views }
 }

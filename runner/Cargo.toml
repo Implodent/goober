@@ -12,3 +12,4 @@ goober-runtime.path = "../runtime"
 raw-window-handle = "0.5.2"
 winit = "0.29.3"
 tokio.workspace = true
+taffy.workspace = true

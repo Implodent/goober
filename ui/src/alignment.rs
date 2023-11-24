@@ -7,16 +7,6 @@ pub struct Alignment {
 }
 
 impl Alignment {
-    pub fn align(&self, size: ISize, space: ISize) -> IPoint {
-        let center_x = (space.width - size.width) as f32 / 2f32;
-        let center_y = (space.height - size.height) as f32 / 2f32;
-
-        let x = center_x * (1f32 + self.horizontal.bias());
-        let y = center_y * (1f32 + self.vertical.bias());
-
-        IPoint::new(x.round() as i32, y.round() as i32)
-    }
-
     pub const TOP_START: Self = Self {
         horizontal: Horizontal::Start,
         vertical: Vertical::Top,
@@ -63,24 +53,6 @@ pub enum Horizontal {
     #[default]
     Center,
     End,
-    Custom(f32),
-}
-
-impl Horizontal {
-    pub fn bias(&self) -> f32 {
-        match self {
-            Self::Start => -1f32,
-            Self::Center => 0f32,
-            Self::End => 1f32,
-            Self::Custom(bias) => *bias,
-        }
-    }
-
-    pub fn align(&self, size: i32, space: i32) -> i32 {
-        let center = (space - size) as f32 / 2f32;
-
-        (center * (1f32 + self.bias())).round() as i32
-    }
 }
 
 #[derive(Clone, Copy, Default, Debug, PartialEq)]
@@ -89,22 +61,24 @@ pub enum Vertical {
     #[default]
     Center,
     Bottom,
-    Custom(f32),
 }
 
-impl Vertical {
-    pub fn bias(&self) -> f32 {
+impl Into<JustifyItems> for Horizontal {
+    fn into(self) -> JustifyItems {
         match self {
-            Self::Top => -1f32,
-            Self::Center => 0f32,
-            Self::Bottom => 1f32,
-            Self::Custom(bias) => *bias,
+            Self::Start => AlignItems::Start,
+            Self::Center => AlignItems::Center,
+            Self::End => AlignItems::End,
         }
     }
+}
 
-    pub fn align(&self, size: i32, space: i32) -> i32 {
-        let center = (space - size) as f32 / 2f32;
-
-        (center * (1f32 + self.bias())).round() as i32
+impl Into<AlignItems> for Vertical {
+    fn into(self) -> AlignItems {
+        match self {
+            Self::Top => AlignItems::Start,
+            Self::Center => AlignItems::Center,
+            Self::Bottom => AlignItems::End,
+        }
     }
 }

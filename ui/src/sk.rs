@@ -24,42 +24,24 @@ impl IntoPaint for Paint {
     }
 }
 
-pub trait IntoIRect {
-    fn into_irect(self) -> IRect;
+pub trait IntoRect<T> {
+    fn into_rect(self) -> Rect<T>;
 }
 
-impl IntoIRect for i32 {
-    fn into_irect(self) -> IRect {
-        IRect::new(self, self, self, self)
-    }
-}
-
-impl IntoIRect for (i32, i32) {
-    fn into_irect(self) -> IRect {
-        let (width, height) = self;
-        IRect {
-            left: width,
-            top: height,
-            right: width,
-            bottom: height,
-        }
-    }
-}
-
-impl IntoIRect for (i32, i32, i32, i32) {
-    fn into_irect(self) -> IRect {
-        let (left, right, top, bottom) = self;
-        IRect {
-            left,
-            right,
-            top,
-            bottom,
-        }
-    }
-}
-
-impl IntoIRect for IRect {
-    fn into_irect(self) -> IRect {
+impl<T> IntoRect<T> for Rect<T> {
+    fn into_rect(self) -> Rect<T> {
         self
+    }
+}
+
+impl<T: TaffyZero> IntoRect<T> for (T, T) {
+    fn into_rect(self) -> Rect<T> {
+        Rect { left: self.0, right: T::ZERO, top: self.1, bottom: T::ZERO }
+    }
+}
+
+impl<T> IntoRect<T> for (T, T, T, T) {
+    fn into_rect(self) -> Rect<T> {
+        Rect { left: self.0, right: self.1, top: self.2, bottom: self.3 }
     }
 }

@@ -1,9 +1,10 @@
 use std::rc::Rc;
+use taffy::prelude::*;
 
 use glutin::surface::GlSurface;
 use goober_runtime::{
-    as_child_of_current_owner, create_render_effect, create_runtime, create_trigger, store_value,
-    with_owner, Owner,
+    as_child_of_current_owner, create_effect, create_render_effect, create_runtime, create_signal,
+    create_trigger, store_value, with_owner, Owner,
 };
 use goober_ui::{
     skia_safe::{Color, IPoint, ISize, Point},
@@ -31,17 +32,37 @@ pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), E
         WindowBuilder::new().with_visible(true).with_title("yes"),
         &event_loop,
     ));
+    let density = Density(ren.with_value(|x| x.window.scale_factor() as f32));
     let render_trigger = create_trigger();
+    let taffy = store_value(Taffy::new());
+    let (node_get, node_set) = create_signal(Node::default());
+    create_effect({
+        let root = root.clone();
+        move |current_node| {
+            let cn = current_node.is_none();
+            let node = taffy
+                .try_update_value(move |tf| root.measure(current_node, tf))
+                .unwrap();
+
+            if cn {
+                node_set(node);
+            }
+        }
+    });
 
     create_render_effect({
         let root = root.clone();
         move |_| {
             render_trigger.track();
+            let node = node_get();
             ren.update_value(|ren| {
                 let canvas = ren.surface.canvas();
                 canvas.clear(Color::WHITE);
 
-                root.render(canvas, &render_cx(&ren.window));
+                taffy.with_value(|taffy| {
+                    let layout = taffy.layout(node);
+                    root.render(canvas, &RenderContext { taffy, layout, density });
+                });
 
                 ren.gr_context.flush_and_submit();
                 ren.gl_surface.swap_buffers(&ren.gl_context).unwrap();
@@ -97,37 +118,9 @@ pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), E
                 ..
             } => {
                 last_mouse = Point::new(position.x as f32, position.y as f32);
-                with_owner(owner, || {
-                    root.ev(
-                        &goober_ui::Event::CursorMove(last_mouse),
-                        &ren.with_value(|ren| render_cx(&ren.window)),
-                    )
-                })
+                with_owner(owner, || root.ev(&goober_ui::Event::CursorMove(last_mouse)))
             }
             _ => {}
         }
     })
-}
-
-fn constraints(window: &Window) -> Constraints {
-    let size = window.inner_size();
-    Constraints {
-        min: ISize::new_empty(),
-        max: ISize {
-            height: size.height as i32,
-            width: size.width as i32,
-        },
-    }
-}
-
-fn render_cx(window: &Window) -> RenderContext {
-    let PhysicalSize { width, height } = window.inner_size();
-    let (width, height): (i32, i32) = (width.try_into().unwrap(), height.try_into().unwrap());
-
-    RenderContext {
-        offset: IPoint::new(0, 0),
-        constraints: constraints(window),
-        space: ISize { width, height },
-        density: Density(window.scale_factor() as f32),
-    }
 }
