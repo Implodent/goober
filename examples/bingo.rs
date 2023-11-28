@@ -22,7 +22,7 @@ fn card(bg: Color, name: &'static str) -> impl View {
 
 fn bingo_app() -> impl View {
     stack_y((
-        stack_x((card(Color::RED, "j"), card(Color::GREEN, "z"))).align(alignment::Horizontal::Start),
-        stack_x((card(Color::BLUE, "x"), card(Color::MAGENTA, "n"))).align(alignment::Horizontal::End),
-    )).align(alignment::Vertical::Top)
+        stack_x((card(Color::RED, "j"), card(Color::GREEN, "z"))).align(Alignment::TOP_START),
+        stack_x((card(Color::BLUE, "x"), card(Color::MAGENTA, "n"))).align(Alignment::TOP_START),
+    ))
 }

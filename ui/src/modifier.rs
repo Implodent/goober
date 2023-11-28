@@ -108,7 +108,7 @@ pub struct Background(MaybeSignal<Paint>);
 impl Modifier for Background {
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         self.0.with(|paint| {
-            canvas.draw_rect(taffy_rect(how.layout.size, how.layout.location).into_sk(), paint)
+            canvas.draw_rect(taffy_rect(how.layout.size, how.layout.location).into_sk(), paint.as_ref())
         });
 
         view.render(canvas, how)
@@ -172,6 +172,8 @@ impl Modifier for Hovering {
                 })
             }
         }
+
+        view.ev(event, how)
     }
 }
 

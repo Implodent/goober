@@ -14,7 +14,7 @@ pub mod prelude {
         canvas::{rectangle, with_canvas},
         modifier::ApplyModifier,
         skia_safe as skia,
-        stacking::{stack_x, stack_y, stack_z},
+        stacking::{stack_x, stack_y},
         text::text,
         IntoDp, Modifier, MouseButton, View,
     };

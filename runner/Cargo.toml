@@ -13,3 +13,10 @@ raw-window-handle = "0.5.2"
 winit = "0.29.3"
 tokio.workspace = true
 taffy.workspace = true
+
+[features]
+skia = ["goober-ui/skia"]
+terminal = ["goober-ui/terminal"]
+nightly = ["goober-runtime/nightly"]
+
+default = ["skia"]

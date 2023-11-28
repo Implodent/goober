@@ -7,13 +7,13 @@ fn main() -> Result<(), LaunchError> {
 fn single_stack() -> impl View {
     stack_y((text("hello"), text("world")))
         .arrange(arrangement::BuiltinVertical::SpacedBy(10.dp()))
-        .align(alignment::Vertical::Top)
+        .alignment(alignment::Vertical::Top)
 }
 
 fn multi_stack() -> impl View {
     stack_x((single_stack(), single_stack(), single_stack()))
         .arrange(arrangement::BuiltinHorizontal::SpacedBy(10.dp()))
-        .align(alignment::Horizontal::Start)
+        .alignment(alignment::Horizontal::Start)
 }
 
 fn rect(color: Color) -> impl View {

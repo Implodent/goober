@@ -7,7 +7,7 @@ pub struct StackX<V, A> {
 }
 
 impl<V, A> StackX<V, A> {
-    pub fn align(self, alignment: alignment::Horizontal) -> Self {
+    pub fn alignment(self, alignment: alignment::Horizontal) -> Self {
         Self { alignment, ..self }
     }
     pub fn arrange<A2>(self, arrangement: A2) -> StackX<V, A2> {
@@ -39,14 +39,16 @@ impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
 
             current_node
         } else {
+            let mut taffies = vec![];
+
+            for child in self.views.iter() {
+                taffies.push(child.measure(None, taffy));
+            }
+
             taffy
                 .new_with_children(
                     self.style(),
-                    &self
-                        .views
-                        .iter()
-                        .map(|child| child.measure(None, taffy))
-                        .collect::<Vec<_>>(),
+                    &taffies,
                 )
                 .unwrap()
         }
@@ -96,7 +98,7 @@ pub struct StackY<V, A> {
 }
 
 impl<V, A> StackY<V, A> {
-    pub fn align(self, alignment: alignment::Vertical) -> Self {
+    pub fn alignment(self, alignment: alignment::Vertical) -> Self {
         Self { alignment, ..self }
     }
     pub fn arrange<A2>(self, arrangement: A2) -> StackY<V, A2> {

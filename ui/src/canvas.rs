@@ -40,7 +40,7 @@ impl View for Rectangle {
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        canvas.draw_rect(self.rect.map(|x| how.density.pixels(x)).into_sk(), &self.paint);
+        canvas.draw_rect(self.rect.map(|x| how.density.pixels(x)).into_sk(), self.paint.as_ref());
     }
 }
 

@@ -6,6 +6,7 @@ resolver = "2"
 tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "sync", "time"] }
 taffy = "0.3.18"
 derive_more = "0.99.17"
+cfg-if = "1"
 
 [workspace.package]
 version = "0.1.0"
@@ -24,5 +25,7 @@ goober-runtime.path = "runtime"
 goober.path = "."
 
 [features]
-nightly = ["goober-runtime/nightly"]
-default = []
+nightly = ["goober-runtime/nightly", "goober-runner/nightly"]
+skia = ["goober-ui/skia", "goober-runner/skia"]
+terminal = ["goober-ui/terminal", "goober-runner/terminal"]
+default = ["skia"]

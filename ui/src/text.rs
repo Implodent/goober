@@ -5,11 +5,13 @@ use super::*;
 
 pub struct Text {
     pub text: MaybeSignal<Oco<'static, str>>,
+    #[cfg(feature = "skia")]
     pub font: MaybeSignal<Font>,
     pub paint: MaybeSignal<Paint>,
 }
 
 impl Text {
+    #[cfg(feature = "skia")]
     pub fn font(self, font: impl Into<MaybeSignal<Font>>) -> Self {
         Self {
             font: font.into(),
@@ -17,6 +19,7 @@ impl Text {
         }
     }
 
+    #[cfg(feature = "skia")]
     pub fn font_size(self, size: impl Into<MaybeSignal<f32>>) -> Self {
         let size: MaybeSignal<f32> = size.into();
         Self {
@@ -40,14 +43,43 @@ impl Text {
 }
 
 impl View for Text {
+    #[allow(unreachable_code)]
     fn style(&self) -> Style {
+        #[cfg(all(feature = "terminal", not(feature = "skia")))]
+        return self.style_terminal();
+
         Style {
             size: self.text.with(|text| {
                 self.font.with(|font| {
                     self.paint.with(|paint| {
-                        Size::from_sk(font.measure_str(text.as_str(), Some(paint)).1.size()).map(Dimension::Points)
+                        Size::from_sk(
+                            font.measure_str(
+                                text.as_str(),
+                                (
+                                    #[cfg(all(feature = "skia", feature = "terminal"))]
+                                    Some(&paint.skia),
+                                    #[cfg(all(feature = "skia", not(feature = "terminal")))]
+                                    Some(paint),
+                                )
+                                    .0,
+                            )
+                            .1
+                            .size(),
+                        )
+                        .map(Dimension::Points)
                     })
                 })
+            }),
+            ..Default::default()
+        }
+    }
+
+    #[cfg(feature = "terminal")]
+    fn style_terminal(&self) -> Style {
+        Style {
+            size: self.text.with(|text| Size {
+                width: Dimension::Points(text.len() as f32),
+                height: Dimension::Points(1.0),
             }),
             ..Default::default()
         }
@@ -62,12 +94,37 @@ impl View for Text {
                         Point {
                             x: how.layout.location.x,
                             y: how.layout.location.y,
-                        }.into_sk(),
+                        }
+                        .into_sk(),
                         font,
-                        paint,
+                        (
+                            #[cfg(all(feature = "skia", feature = "terminal"))]
+                            &paint.skia,
+                            #[cfg(not(feature = "terminal"))]
+                            paint,
+                        )
+                            .0,
                     )
                 })
             });
+        })
+    }
+
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+        &self,
+        renderer: &mut Terminal,
+        how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
+        use crossterm::style::{PrintStyledContent, StyledContent};
+
+        self.paint.with(|paint| {
+            self.text.with(|text| {
+                renderer.queue(PrintStyledContent(StyledContent::new(
+                    paint.terminal.clone(),
+                    text,
+                )))
+            })
         })
     }
 }
@@ -98,6 +155,7 @@ pub fn text(text: impl StrFn<'static>) -> Text {
     Text {
         text: text.sig(),
         font: MaybeSignal::Static(Font::default()),
+        #[cfg(feature = "skia")]
         paint: MaybeSignal::Static(Paint::new(Color4f::from(Color::BLACK), None)),
     }
 }
