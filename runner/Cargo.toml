@@ -13,9 +13,25 @@ raw-window-handle = "0.5.2"
 winit = "0.29.3"
 tokio.workspace = true
 taffy.workspace = true
+web-sys = { version = "0.3", features = [
+  "Document",
+  "Window",
+  "Element"
+], optional = true }
+wgpu = { version = "0.18", optional = true }
 
 [features]
 skia = ["goober-ui/skia"]
+webgl = [
+  "dep:web-sys",
+  "web-sys/HtmlCanvasElement",
+  "web-sys/WebGlBuffer",
+  "web-sys/WebGl2RenderingContext",
+  "web-sys/WebGlProgram",
+  "web-sys/WebGlShader",
+  "web-sys/WebGlVertexArrayObject"
+]
+webgpu = ["dep:wgpu", "dep:web-sys"]
 terminal = ["goober-ui/terminal"]
 nightly = ["goober-runtime/nightly"]
 

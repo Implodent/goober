@@ -20,7 +20,6 @@ pub use winit::error::EventLoopError as Error;
 pub fn launch<V: View + 'static>(make: impl Fn() -> V + 'static) -> Result<(), Error> {
     let _rt = create_runtime();
     let (root, _disposer) = as_child_of_current_owner(|()| Rc::new(make()))(());
-    create_render_effect(|_| {});
 
     let event_loop = EventLoop::new()?;
 

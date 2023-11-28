@@ -211,6 +211,8 @@ pub struct RenderContext<'a> {
     pub layout: Layout,
     pub taffy: &'a Taffy,
     pub this_node: Node,
+    #[cfg(feature = "terminal")]
+    pub is_terminal: bool
 }
 
 #[derive(Clone, Debug)]
