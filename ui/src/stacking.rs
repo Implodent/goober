@@ -45,12 +45,7 @@ impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
                 taffies.push(child.measure(None, taffy));
             }
 
-            taffy
-                .new_with_children(
-                    self.style(),
-                    &taffies,
-                )
-                .unwrap()
+            taffy.new_with_children(self.style(), &taffies).unwrap()
         }
     }
 
@@ -80,6 +75,27 @@ impl<V: Views, A: arrangement::Horizontal> View for StackX<V, A> {
                 },
             )
         })
+    }
+
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+        &self,
+        renderer: &mut Terminal,
+        how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
+        for (index, view) in self.views.iter().enumerate() {
+            let child_node = how.taffy.child(how.this_node, index);
+            view.render_terminal(
+                renderer,
+                &RenderContext {
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
+                    ..*how
+                },
+            )?;
+        }
+
+        Ok(())
     }
 }
 
@@ -136,12 +152,7 @@ impl<V: Views, A: arrangement::Vertical> View for StackY<V, A> {
                 taffies.push(child.measure(None, taffy));
             }
 
-            taffy
-                .new_with_children(
-                    self.style(),
-                    &taffies,
-                )
-                .unwrap()
+            taffy.new_with_children(self.style(), &taffies).unwrap()
         }
     }
 
@@ -171,6 +182,27 @@ impl<V: Views, A: arrangement::Vertical> View for StackY<V, A> {
                 },
             )
         })
+    }
+
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+        &self,
+        renderer: &mut Terminal,
+        how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
+        for (index, view) in self.views.iter().enumerate() {
+            let child_node = how.taffy.child(how.this_node, index);
+            view.render_terminal(
+                renderer,
+                &RenderContext {
+                    layout: *how.taffy.layout(child_node).unwrap(),
+                    this_node: child_node,
+                    ..*how
+                },
+            )?;
+        }
+
+        Ok(())
     }
 }
 

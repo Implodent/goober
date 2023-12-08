@@ -19,6 +19,7 @@ web-sys = { version = "0.3", features = [
   "Element"
 ], optional = true }
 wgpu = { version = "0.18", optional = true }
+crossterm = { optional = true, workspace = true }
 
 [features]
 skia = ["goober-ui/skia"]
@@ -32,7 +33,7 @@ webgl = [
   "web-sys/WebGlVertexArrayObject"
 ]
 webgpu = ["dep:wgpu", "dep:web-sys"]
-terminal = ["goober-ui/terminal"]
+terminal = ["goober-ui/terminal", "dep:crossterm"]
 nightly = ["goober-runtime/nightly"]
 
 default = ["skia"]

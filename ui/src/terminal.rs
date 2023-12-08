@@ -1,18 +1,32 @@
 use crossterm::{Command, QueueableCommand};
 
 pub use crossterm::style::ContentStyle as Paint;
+use taffy::geometry::Point;
 
 use super::*;
 
-pub struct Terminal<'a> {
-    writer: &'a mut dyn std::io::Write,
+pub struct Terminal {
+    writer: &'static mut dyn std::io::Write,
 }
 
-impl<'a> Terminal<'a> {
+impl Terminal {
+    pub fn new(writer: impl std::io::Write + 'static) -> Self {
+        let leaked = Box::leak::<'static>(Box::new(writer));
+        Self { writer: leaked }
+    }
     pub fn queue(&mut self, command: impl Command) -> Result<(), std::io::Error> {
         self.writer.queue(command)?;
 
         Ok(())
+    }
+
+    pub fn move_to(&mut self, point: Point<f32>) -> Result<(), std::io::Error> {
+        // unwrapping here because failing to do the conversion is a bug, so we crash the program
+        // if it does fail
+        self.queue(crossterm::cursor::MoveTo(
+            (point.x.round() as i32).abs().try_into().unwrap(),
+            (point.y.round() as i32).abs().try_into().unwrap(),
+        ))
     }
 
     pub fn execute(&mut self, command: impl Command) -> Result<(), std::io::Error> {
@@ -22,6 +36,14 @@ impl<'a> Terminal<'a> {
 
     pub fn flush(&mut self) -> Result<(), std::io::Error> {
         self.writer.flush()
+    }
+}
+
+impl Drop for Terminal {
+    fn drop(&mut self) {
+        // because the field is private the invariant that the value is owned by us is kept,
+        // so we can use from_raw to construct the box again so we can drop it
+        let _ = unsafe { Box::from_raw(self.writer as _) };
     }
 }
 
@@ -63,5 +85,8 @@ impl<G: View, T: View> View for SwitchIfTerminal<G, T> {
 }
 
 pub fn switch_render_mode<G: View, T: View>(graphical: G, terminal: T) -> SwitchIfTerminal<G, T> {
-    SwitchIfTerminal { graphical, terminal }
+    SwitchIfTerminal {
+        graphical,
+        terminal,
+    }
 }

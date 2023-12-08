@@ -1,6 +1,7 @@
 use std::ops::Add;
 
 use taffy::{axis::AbsoluteAxis, prelude::*};
+pub use taffy::prelude::LengthPercentage;
 pub type Point<T = f32> = taffy::geometry::Point<T>;
 pub mod alignment;
 pub mod arrangement;
@@ -36,7 +37,10 @@ use skia_safe::Color as SkColor;
 
 #[cfg(all(feature = "skia", feature = "terminal"))]
 impl Paint {
-    pub fn new<'a>(color: skia_safe::Color4f, color_space: impl Into<Option<&'a skia_safe::ColorSpace>>) -> Self {
+    pub fn new<'a>(
+        color: skia_safe::Color4f,
+        color_space: impl Into<Option<&'a skia_safe::ColorSpace>>,
+    ) -> Self {
         Self::from(skia_safe::Paint::new(color, color_space))
     }
 }
@@ -81,16 +85,12 @@ impl From<skia_safe::Paint> for Paint {
         Self {
             terminal: terminal::Paint {
                 attributes: Attributes::default(),
-                foreground_color: if let Style::StrokeAndFill
-                | Style::Stroke = skia.style()
-                {
+                foreground_color: if let Style::StrokeAndFill | Style::Stroke = skia.style() {
                     color
                 } else {
                     None
                 },
-                background_color: if let Style::StrokeAndFill | Style::Fill =
-                    skia.style()
-                {
+                background_color: if let Style::StrokeAndFill | Style::Fill = skia.style() {
                     color
                 } else {
                     None
@@ -212,7 +212,7 @@ pub struct RenderContext<'a> {
     pub taffy: &'a Taffy,
     pub this_node: Node,
     #[cfg(feature = "terminal")]
-    pub is_terminal: bool
+    pub is_terminal: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -244,6 +244,19 @@ pub enum MouseButton {
     Back,
     Forward,
     Other(u16),
+}
+
+#[cfg(feature = "terminal")]
+impl From<crossterm::event::MouseButton> for MouseButton {
+    fn from(value: crossterm::event::MouseButton) -> Self {
+        use crossterm::event::MouseButton as M;
+
+        match value {
+            M::Left => Self::Left,
+            M::Middle => Self::Middle,
+            M::Right => Self::Right,
+        }
+    }
 }
 
 pub trait View {
@@ -322,6 +335,37 @@ pub trait Modifier {
     #[inline(always)]
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         view.render(canvas, how)
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+        &self,
+        view: &dyn View,
+        renderer: &mut Terminal,
+        how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
+        view.render_terminal(renderer, how)
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    #[cfg(feature = "terminal")]
+    fn measure_terminal(
+        &self,
+        view: &dyn View,
+        current_node: Option<Node>,
+        taffy: &mut Taffy,
+    ) -> Node {
+        view.measure_terminal(current_node, taffy)
+    }
+
+    #[doc(hidden)]
+    #[inline(always)]
+    #[cfg(feature = "terminal")]
+    fn style_terminal(&self, view: &dyn View) -> Style {
+        view.style_terminal()
     }
 }
 

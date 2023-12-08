@@ -20,6 +20,25 @@ impl<V: View, M: Modifier> View for Applied<V, M> {
     fn ev(&self, event: &Event, how: &RenderContext) {
         self.modifier.ev(&self.view, event, how)
     }
+
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+            &self,
+            renderer: &mut Terminal,
+            how: &RenderContext,
+        ) -> Result<(), std::io::Error> {
+        self.modifier.render_terminal(&self.view, renderer, how)
+    }
+
+    #[cfg(feature = "terminal")]
+    fn measure_terminal(&self, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
+        self.modifier.measure_terminal(&self.view, current_node, taffy)
+    }
+
+    #[cfg(feature = "terminal")]
+    fn style_terminal(&self) -> Style {
+        self.modifier.style_terminal(&self.view)
+    }
 }
 
 pub trait ApplyModifier {
@@ -147,10 +166,34 @@ pub struct OnClick<F>(F);
 
 impl<F: Fn(MouseButton)> Modifier for OnClick<F> {
     fn ev(&self, view: &dyn View, event: &Event, how: &RenderContext) {
-        if let Event::Click(point, button) = event {
-            if taffy_rect_contains(&taffy_rect(how.layout.size, how.layout.location), &point) {
-                (self.0)(*button);
+        match event {
+            Event::Click(click, button)
+                if taffy_rect_contains(
+                    &taffy_rect(how.layout.size, how.layout.location),
+                    &click,
+                ) =>
+            {
+                (self.0)(*button)
             }
+            #[cfg(feature = "terminal")]
+            Event::Terminal(crossterm::event::Event::Mouse(crossterm::event::MouseEvent {
+                row,
+                column,
+                kind: crossterm::event::MouseEventKind::Down(button),
+                modifiers: _,
+            })) if taffy_rect_contains(
+                &taffy_rect(how.layout.size, how.layout.location),
+                &Point {
+                    x: (row - 1) as _,
+                    y: (column - 1) as _,
+                },
+            ) =>
+            {
+                (self.0)(
+                    (*button).into(),
+                )
+            }
+            _ => {}
         }
 
         view.ev(event, how)

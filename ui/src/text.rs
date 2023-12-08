@@ -120,6 +120,7 @@ impl View for Text {
 
         self.paint.with(|paint| {
             self.text.with(|text| {
+                renderer.move_to(how.layout.location)?;
                 renderer.queue(PrintStyledContent(StyledContent::new(
                     paint.terminal.clone(),
                     text,

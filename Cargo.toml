@@ -7,6 +7,7 @@ tokio = { version = "1.33.0", features = ["rt", "rt-multi-thread", "sync", "time
 taffy = "0.3.18"
 derive_more = "0.99.17"
 cfg-if = "1"
+crossterm = { version = "0.27", features = ["event-stream"] }
 
 [workspace.package]
 version = "0.1.0"

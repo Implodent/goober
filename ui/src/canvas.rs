@@ -17,6 +17,14 @@ impl<F: Fn(&Canvas)> View for WithCanvas<F> {
 
         canvas.restore();
     }
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+        &self,
+        _renderer: &mut Terminal,
+        _how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
+        panic!("WithCanvas component cannot render to a terminal.")
+    }
 }
 
 pub fn with_canvas<F: Fn(&Canvas)>(f: F, style: Style) -> WithCanvas<F> {
@@ -40,7 +48,19 @@ impl View for Rectangle {
     }
 
     fn render(&self, canvas: &Canvas, how: &RenderContext) {
-        canvas.draw_rect(self.rect.map(|x| how.density.pixels(x)).into_sk(), self.paint.as_ref());
+        canvas.draw_rect(
+            self.rect.map(|x| how.density.pixels(x)).into_sk(),
+            self.paint.as_ref(),
+        );
+    }
+
+    #[cfg(feature = "terminal")]
+    fn render_terminal(
+            &self,
+            _renderer: &mut Terminal,
+            _how: &RenderContext,
+        ) -> Result<(), std::io::Error> {
+        todo!("Rectangle (currently) cannot render to a terminal.")
     }
 }
 

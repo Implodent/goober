@@ -1,11 +1,15 @@
-pub use goober_runner::{launch, Error as LaunchError};
+#[cfg(feature = "terminal")]
+pub use goober_runner::launch_terminal;
+pub use goober_runner::{launch, launch_terminal_or_winit, Error as LaunchError};
 pub use goober_ui as ui;
 
 pub use goober_runtime as runtime;
 
 pub mod prelude {
     use super::*;
-    pub use super::{launch, LaunchError};
+    #[cfg(feature = "terminal")]
+    pub use goober_runner::launch_terminal;
+    pub use goober_runner::{launch, launch_terminal_or_winit, Error as LaunchError};
     pub use ui::skia_safe::{Color, Font, FontStyle, IRect, Typeface};
     pub use ui::{
         alignment::{self, Alignment},
@@ -17,7 +21,8 @@ pub mod prelude {
         stacking::{stack_x, stack_y},
         text::text,
         IntoDp, Modifier, MouseButton, View,
+        LengthPercentage
     };
 
-    pub use runtime::signal_prelude::*;
+    pub use runtime::{oco::Oco, signal_prelude::*};
 }

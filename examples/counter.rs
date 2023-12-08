@@ -1,13 +1,13 @@
 use goober::prelude::*;
 
 fn main() -> Result<(), LaunchError> {
-    launch(app)
+    launch_terminal_or_winit(app)
 }
 
 fn app() -> impl View {
     let (counter, counter_set) = create_signal(0);
 
-    text(move || format!("Counter: {}", counter.get()))
+    text(move || Oco::Owned(format!("Counter: {}", counter.get())))
         // set the font's size to be a little bigger
         .font_size(50.0)
         // bad attempt at making it look like a button ;)
@@ -20,5 +20,5 @@ fn app() -> impl View {
                     _ => return,
                 }
             })
-        })
+        }).padding((LengthPercentage::Points(1.0), LengthPercentage::Points(1.0)))
 }
