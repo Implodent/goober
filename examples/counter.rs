@@ -20,5 +20,6 @@ fn app() -> impl View {
                     _ => return,
                 }
             })
-        }).padding((LengthPercentage::Points(1.0), LengthPercentage::Points(1.0)))
+        })
+        .padding((LengthPercentage::Points(1.0), LengthPercentage::Points(1.0)))
 }

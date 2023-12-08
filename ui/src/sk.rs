@@ -36,12 +36,22 @@ impl<T> IntoRect<T> for Rect<T> {
 
 impl<T: TaffyZero> IntoRect<T> for (T, T) {
     fn into_rect(self) -> Rect<T> {
-        Rect { left: self.0, right: T::ZERO, top: self.1, bottom: T::ZERO }
+        Rect {
+            left: self.0,
+            right: T::ZERO,
+            top: self.1,
+            bottom: T::ZERO,
+        }
     }
 }
 
 impl<T> IntoRect<T> for (T, T, T, T) {
     fn into_rect(self) -> Rect<T> {
-        Rect { left: self.0, right: self.1, top: self.2, bottom: self.3 }
+        Rect {
+            left: self.0,
+            right: self.1,
+            top: self.2,
+            bottom: self.3,
+        }
     }
 }

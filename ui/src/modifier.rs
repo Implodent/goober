@@ -23,16 +23,17 @@ impl<V: View, M: Modifier> View for Applied<V, M> {
 
     #[cfg(feature = "terminal")]
     fn render_terminal(
-            &self,
-            renderer: &mut Terminal,
-            how: &RenderContext,
-        ) -> Result<(), std::io::Error> {
+        &self,
+        renderer: &mut Terminal,
+        how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
         self.modifier.render_terminal(&self.view, renderer, how)
     }
 
     #[cfg(feature = "terminal")]
     fn measure_terminal(&self, current_node: Option<Node>, taffy: &mut Taffy) -> Node {
-        self.modifier.measure_terminal(&self.view, current_node, taffy)
+        self.modifier
+            .measure_terminal(&self.view, current_node, taffy)
     }
 
     #[cfg(feature = "terminal")]
@@ -127,7 +128,10 @@ pub struct Background(MaybeSignal<Paint>);
 impl Modifier for Background {
     fn render(&self, view: &dyn View, canvas: &Canvas, how: &RenderContext) {
         self.0.with(|paint| {
-            canvas.draw_rect(taffy_rect(how.layout.size, how.layout.location).into_sk(), paint.as_ref())
+            canvas.draw_rect(
+                taffy_rect(how.layout.size, how.layout.location).into_sk(),
+                paint.as_ref(),
+            )
         });
 
         view.render(canvas, how)
@@ -189,9 +193,7 @@ impl<F: Fn(MouseButton)> Modifier for OnClick<F> {
                 },
             ) =>
             {
-                (self.0)(
-                    (*button).into(),
-                )
+                (self.0)((*button).into())
             }
             _ => {}
         }

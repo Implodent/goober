@@ -56,10 +56,10 @@ impl View for Rectangle {
 
     #[cfg(feature = "terminal")]
     fn render_terminal(
-            &self,
-            _renderer: &mut Terminal,
-            _how: &RenderContext,
-        ) -> Result<(), std::io::Error> {
+        &self,
+        _renderer: &mut Terminal,
+        _how: &RenderContext,
+    ) -> Result<(), std::io::Error> {
         todo!("Rectangle (currently) cannot render to a terminal.")
     }
 }
